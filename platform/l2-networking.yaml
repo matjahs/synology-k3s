@@ -1,0 +1,20 @@
+apiVersion: cilium.io/v2
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: lan-ip-pool
+  namespace: kube-system
+spec:
+  blocks:
+    - cidr: "172.16.30.240/29"
+---
+apiVersion: cilium.io/v2alpha1
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: lan-arp-policy
+  namespace: kube-system
+spec:
+  serviceSelector: {}
+  nodeSelector: {}
+  interfaces:
+    - enp3s0
+  loadBalancerIPs: true
