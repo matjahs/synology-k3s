@@ -8,7 +8,10 @@ spec:
   source:
     repoURL: "https://github.com/matjahs/synology-k3s.git"
     targetRevision: HEAD
-    path: cluster-gitops/platform
+    path: cluster-gitops
+    directory:
+      recurse: true
+      include: '{platform,*-app.yaml,apps/*-app.yaml}'
   destination:
     server: "https://kubernetes.default.svc"
     namespace: argocd
