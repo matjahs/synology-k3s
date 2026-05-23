@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cyberchef
+  namespace: tools
+  labels:
+    app.kubernetes.io/name: cyberchef
+specs:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cyberchef
+  spec:
+    containers:
+      - name: cyberchef
+        
