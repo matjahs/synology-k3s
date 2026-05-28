@@ -4,5 +4,6 @@ kind: Kustomization
 namespace: tools
 
 resources:
-  - cyberchef/deployment.yaml
-  - cyberchef/ingress-svc.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml

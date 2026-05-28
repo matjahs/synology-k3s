@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  # Multi-source: the Bitnami Helm chart pulls its values file from the git
+  # repo via the $values ref, and the same git source also supplies the raw
+  # Kustomize resources (Gateway, HTTPRoute, Certificate, Issuer).
+  sources:
+    - repoURL: https://charts.bitnami.com/bitnami
+      chart: keycloak
+      targetRevision: "24.4.1"
+      helm:
+        valueFiles:
+          - $values/cluster-gitops/apps/keycloak/keycloak-values.yaml
+    - repoURL: https://github.com/matjahs/synology-k3s.git
+      targetRevision: HEAD
+      ref: values
+      path: cluster-gitops/apps/keycloak
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: keycloak
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

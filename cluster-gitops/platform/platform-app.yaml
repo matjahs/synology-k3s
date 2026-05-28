@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-networking
+  namespace: argocd
+  annotations:
+    # Cilium L2/LB pool + Gateway; depends on Cilium CRDs (wave -2) and the
+    # Gateway API CRDs installed during bootstrap.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/matjahs/synology-k3s.git
+    targetRevision: HEAD
+    # Kustomize build of platform/kustomization.yaml (argocd-ingress + l2-networking).
+    path: cluster-gitops/platform
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

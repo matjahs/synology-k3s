@@ -1,0 +1,60 @@
+# Helm values for bitnami/keycloak
+# TLS is terminated at the Gateway; Keycloak runs plain HTTP internally.
+
+auth:
+  adminUser: admin
+  # adminPassword is auto-generated and stored in the 'keycloak' Secret.
+  # Retrieve it with:
+  #   kubectl get secret keycloak -n keycloak -o jsonpath='{.data.admin-password}' | base64 -d
+
+production: true
+
+extraEnvVars:
+  - name: KC_PROXY_HEADERS
+    value: xforwarded
+  - name: KC_HTTP_ENABLED
+    value: "true"
+  - name: KC_HOSTNAME
+    value: keycloak.lab.mxe11.nl
+  - name: KC_HOSTNAME_STRICT
+    value: "false"
+
+service:
+  type: ClusterIP
+  ports:
+    http: 80
+
+ingress:
+  enabled: false
+
+postgresql:
+  enabled: true
+  auth:
+    username: keycloak
+    database: keycloak
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+startupProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 30
+
+livenessProbe:
+  enabled: true
+  periodSeconds: 20
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  periodSeconds: 10
+  failureThreshold: 3

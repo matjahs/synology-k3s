@@ -3,6 +3,10 @@ kind: Application
 metadata:
   name: cilium
   namespace: argocd
+  annotations:
+    # CNI must be healthy before anything that needs pod networking,
+    # LoadBalancer IPs, or the Cilium-backed GatewayClass.
+    argocd.argoproj.io/sync-wave: "-2"
 spec:
   project: default
   source:

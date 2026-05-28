@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-tls
+  namespace: keycloak
+spec:
+  secretName: keycloak-tls
+  duration: 87600h   # 10 years
+  renewBefore: 720h  # renew 30 days before expiry
+  subject:
+    organizations:
+      - lab.mxe11.nl
+  commonName: keycloak.lab.mxe11.nl
+  dnsNames:
+    - keycloak.lab.mxe11.nl
+  issuerRef:
+    name: keycloak-selfsigned
+    kind: Issuer
