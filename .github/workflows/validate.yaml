@@ -1,0 +1,69 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yamllint
+        run: pipx install yamllint
+      - name: Lint YAML
+        run: yamllint -c .yamllint.yaml .
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck bootstrap-k8s-vm.sh
+
+  kustomize-kubeconform:
+    runs-on: ubuntu-latest
+    env:
+      KUSTOMIZE_VERSION: v5.8.1
+      KUBECONFORM_VERSION: v0.6.7
+      # Pull CRD schemas (Argo CD, Gateway API, Cilium, cert-manager) from the
+      # community catalog; fall back to the bundled k8s schemas first.
+      CRD_SCHEMA: "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kustomize + kubeconform
+        run: |
+          curl -sSfL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin kustomize
+          curl -sSfL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+      - name: Validate Kustomize builds
+        run: |
+          for d in platform apps/cyberchef apps/keycloak; do
+            echo "::group::kustomize build $d"
+            kustomize build "$d" | kubeconform -strict -summary -ignore-missing-schemas \
+              -schema-location default -schema-location "$CRD_SCHEMA"
+            echo "::endgroup::"
+          done
+      - name: Validate Argo CD Application manifests
+        run: |
+          find . -path ./.git -prune -o -name '*-app.yaml' -print0 \
+            | xargs -0 kubeconform -strict -summary -ignore-missing-schemas \
+                -schema-location default -schema-location "$CRD_SCHEMA"
+
+  helm-template:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Render Keycloak chart with repo values
+        run: |
+          helm template keycloak oci://registry-1.docker.io/bitnamicharts/keycloak \
+            --version 24.4.1 \
+            -f apps/keycloak/keycloak-values.yaml > /dev/null

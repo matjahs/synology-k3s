@@ -17,8 +17,7 @@ spec:
     spec:
       containers:
         - name: cyberchef
-          # TODO: pin to a specific tag instead of latest for reproducible GitOps.
-          image: gchq/cyberchef:latest
+          image: gchq/cyberchef:2.0.0
           ports:
             - name: http
               containerPort: 8080

@@ -1,0 +1,17 @@
+---
+# Relaxed ruleset suited to Kubernetes / Argo CD manifests.
+extends: default
+
+rules:
+  line-length:
+    max: 160
+    level: warning
+  document-start: disable
+  truthy:
+    # Allow GitHub Actions `on:` keys and string-y values like "true"/"false".
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  indentation:
+    spaces: 2
+    indent-sequences: consistent

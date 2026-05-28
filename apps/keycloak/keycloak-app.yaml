@@ -11,7 +11,11 @@ spec:
   # repo via the $values ref, and the same git source also supplies the raw
   # Kustomize resources (Gateway, HTTPRoute, Certificate, Issuer).
   sources:
-    - repoURL: https://charts.bitnami.com/bitnami
+    # Bitnami charts are served from the OCI registry. repoURL is the registry
+    # namespace; the chart name is given separately. NB: confirm this chart/tag
+    # is still freely pullable (Bitnami moved much of its catalog to "Secure
+    # Images"/bitnamilegacy in 2025).
+    - repoURL: registry-1.docker.io/bitnamicharts
       chart: keycloak
       targetRevision: "24.4.1"
       helm:

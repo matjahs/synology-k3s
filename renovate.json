@@ -1,0 +1,29 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "argocd": {
+    "managerFilePatterns": ["/-app\\.yaml$/"]
+  },
+  "kubernetes": {
+    "managerFilePatterns": ["/\\.yaml$/"]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^bootstrap-k8s-vm\\.sh$/"],
+      "matchStrings": ["GATEWAY_API_VERSION=\"(?<currentValue>.*?)\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes-sigs/gateway-api"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["argocd"],
+      "groupName": "Argo CD Helm charts"
+    }
+  ]
+}
