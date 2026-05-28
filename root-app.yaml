@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: "https://github.com/matjahs/synology-k3s.git"
     targetRevision: HEAD
-    path: cluster-gitops
+    path: .
     directory:
       recurse: true
       # Discover every child Application manifest at any depth, but not this

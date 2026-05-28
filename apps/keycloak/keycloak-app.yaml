@@ -16,11 +16,11 @@ spec:
       targetRevision: "24.4.1"
       helm:
         valueFiles:
-          - $values/cluster-gitops/apps/keycloak/keycloak-values.yaml
+          - $values/apps/keycloak/keycloak-values.yaml
     - repoURL: https://github.com/matjahs/synology-k3s.git
       targetRevision: HEAD
       ref: values
-      path: cluster-gitops/apps/keycloak
+      path: apps/keycloak
   destination:
     server: https://kubernetes.default.svc
     namespace: keycloak

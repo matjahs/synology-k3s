@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: https://github.com/matjahs/synology-k3s.git
     targetRevision: HEAD
-    path: cluster-gitops/apps/cyberchef
+    path: apps/cyberchef
   destination:
     server: https://kubernetes.default.svc
     namespace: tools
