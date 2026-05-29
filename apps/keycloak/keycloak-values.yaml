@@ -7,7 +7,10 @@ auth:
   # Retrieve it with:
   #   kubectl get secret keycloak -n keycloak -o jsonpath='{.data.admin-password}' | base64 -d
 
-production: true
+# production: true is intentionally omitted.
+# The chart requires tls.enabled=true alongside production=true (keystore/truststore),
+# but TLS is terminated at the Gateway — Keycloak receives plain HTTP.
+# The KC_PROXY_HEADERS + KC_HTTP_ENABLED env vars below give equivalent behaviour.
 
 extraEnvVars:
   - name: KC_PROXY_HEADERS
