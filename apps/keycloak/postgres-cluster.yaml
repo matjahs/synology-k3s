@@ -1,0 +1,29 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: keycloak-db
+  namespace: keycloak
+spec:
+  # Single instance: this is a single-node k3s cluster, so HA replicas would
+  # only ever schedule on the same node. Bump once more nodes exist.
+  instances: 1
+
+  # Backups: CNPG supports scheduled base-backups + WAL archiving, but that
+  # needs an S3-compatible target (e.g. MinIO on the NAS) which isn't deployed
+  # yet. Wire spec.backup + a ScheduledBackup once that exists. Tracked in TODO.
+
+  storage:
+    size: 8Gi
+    # Cluster-default StorageClass is synology-iscsi; named explicitly so the
+    # data volume's backend is unambiguous.
+    storageClass: synology-iscsi
+
+  bootstrap:
+    initdb:
+      database: keycloak
+      owner: keycloak
+      # Owner role password comes from this out-of-band Secret (the same one
+      # the Keycloak CR reads). type: kubernetes.io/basic-auth, keys
+      # username/password. See keycloak-db-secret.example.yaml.
+      secret:
+        name: keycloak-db-app

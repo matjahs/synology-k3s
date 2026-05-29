@@ -4,27 +4,18 @@ metadata:
   name: keycloak
   namespace: argocd
   annotations:
+    # Reconciled after the Keycloak + CloudNativePG operators (wave -1). The CRs
+    # here (Keycloak, postgresql.cnpg.io/Cluster) need those CRDs to exist.
     argocd.argoproj.io/sync-wave: "1"
 spec:
   project: default
-  # Multi-source: the Bitnami Helm chart pulls its values file from the git
-  # repo via the $values ref, and the same git source also supplies the raw
-  # Kustomize resources (Gateway, HTTPRoute, Certificate, Issuer).
-  sources:
-    # Bitnami charts are served from the OCI registry. repoURL is the registry
-    # namespace; the chart name is given separately. NB: confirm this chart/tag
-    # is still freely pullable (Bitnami moved much of its catalog to "Secure
-    # Images"/bitnamilegacy in 2025).
-    - repoURL: registry-1.docker.io/bitnamicharts
-      chart: keycloak
-      targetRevision: "25.3.2"
-      helm:
-        valueFiles:
-          - $values/apps/keycloak/keycloak-values.yaml
-    - repoURL: https://github.com/matjahs/synology-k3s.git
-      targetRevision: HEAD
-      ref: values
-      path: apps/keycloak
+  # Plain Kustomize build of apps/keycloak (Gateway, HTTPRoutes, Certificate,
+  # Issuer, CNPG Cluster, Keycloak CR). No Helm — the Bitnami chart was
+  # retired in favour of the upstream Keycloak Operator.
+  source:
+    repoURL: https://github.com/matjahs/synology-k3s.git
+    targetRevision: HEAD
+    path: apps/keycloak
   destination:
     server: https://kubernetes.default.svc
     namespace: keycloak

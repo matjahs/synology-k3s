@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-operator
+  namespace: argocd
+  annotations:
+    # Keycloak CRDs (Keycloak, KeycloakRealmImport) + the operator Deployment
+    # must exist before the Keycloak CR (wave 1) is reconciled.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  # Sync the operator's release manifests straight from the upstream repo at a
+  # pinned tag. The kubernetes/ dir holds exactly three files: the two CRDs and
+  # kubernetes.yml (ServiceAccount + RBAC + operator Deployment + Service).
+  source:
+    repoURL: https://github.com/keycloak/keycloak-k8s-resources.git
+    targetRevision: "26.6.2"
+    path: kubernetes
+    directory:
+      # The kubernetes/ dir is flat and contains exactly the two CRDs plus
+      # kubernetes.yml (operator Deployment + RBAC) — apply all of them.
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    # The operator watches the namespace it runs in, so the Keycloak CR lives
+    # in this same namespace (see apps/keycloak).
+    namespace: keycloak
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # The Keycloak CRD is large; server-side apply avoids the kubectl
+      # last-applied-configuration annotation size limit.
+      - ServerSideApply=true

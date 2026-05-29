@@ -3,12 +3,14 @@ kind: Kustomization
 
 namespace: keycloak
 
-# Only the raw supporting resources live here. The Keycloak Helm chart is
-# inflated by the Argo CD Application (keycloak-app.yaml) as a native Helm
-# source, so no kustomize helmCharts block (and no --enable-helm) is needed.
+# Keycloak now runs via the Keycloak Operator (CRDs installed by the platform
+# keycloak-operator app) backed by a CloudNativePG Postgres Cluster. This
+# Application is a plain Kustomize build of the resources below — no Helm.
 # The keycloak namespace is created via the Application's CreateNamespace=true.
 resources:
   - certificate-issuer.yaml
   - certificate.yaml
   - gateway.yaml
   - httproute.yaml
+  - postgres-cluster.yaml
+  - keycloak-cr.yaml

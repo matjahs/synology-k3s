@@ -1,0 +1,35 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak
+spec:
+  instances: 1
+
+  db:
+    vendor: postgres
+    # CloudNativePG read-write service for the keycloak-db Cluster.
+    host: keycloak-db-rw
+    port: 5432
+    database: keycloak
+    usernameSecret:
+      name: keycloak-db-app
+      key: username
+    passwordSecret:
+      name: keycloak-db-app
+      key: password
+
+  # TLS is terminated at the Cilium Gateway; Keycloak speaks plain HTTP behind
+  # it and trusts X-Forwarded-* headers.
+  http:
+    httpEnabled: true
+  proxy:
+    headers: xforwarded
+
+  hostname:
+    hostname: https://keycloak.lab.mxe11.nl
+    strict: false
+
+  # Routing is handled by our Gateway API HTTPRoute, not the operator's Ingress.
+  ingress:
+    enabled: false
