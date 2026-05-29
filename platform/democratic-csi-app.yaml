@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: democratic-csi
+  namespace: argocd
+  annotations:
+    # Storage must be available before any stateful workload (e.g. Keycloak's
+    # PostgreSQL PVC, wave 1) provisions a volume. Has no dependency on the
+    # L2/Gateway networking (wave 0), only on a healthy node + CNI.
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  project: default
+  source:
+    repoURL: https://democratic-csi.github.io/charts/
+    chart: democratic-csi
+    targetRevision: 0.15.1
+    helm:
+      # All values are inlined (matching cilium / cert-manager). The only
+      # secret material — DSM host + credentials — lives in the
+      # `democratic-csi-driver-config` Secret applied out-of-band (see
+      # democratic-csi-secret.example.yaml), NOT in this file.
+      values: |
+        csiDriver:
+          name: org.democratic-csi.synology-iscsi
+
+        # Cluster-wide default StorageClass. PVCs without an explicit
+        # storageClassName (e.g. Bitnami PostgreSQL) land on Synology iSCSI.
+        storageClasses:
+          - name: synology-iscsi
+            defaultClass: true
+            reclaimPolicy: Delete
+            volumeBindingMode: Immediate
+            allowVolumeExpansion: true
+            parameters:
+              fsType: ext4
+            mountOptions: []
+
+        # Snapshots are intentionally OFF: VolumeSnapshotClass + working
+        # snapshots require the cluster-wide external-snapshotter CRDs and a
+        # snapshot-controller, which are not installed in this cluster yet.
+        # See democratic-csi.md ("Enabling snapshots") to turn this on later.
+        volumeSnapshotClasses: []
+
+        controller:
+          enabled: true
+          externalResizer:
+            # Online PVC expansion (pairs with allowVolumeExpansion above).
+            enabled: true
+          externalSnapshotter:
+            enabled: false
+
+        node:
+          enabled: true
+
+        driver:
+          # Credentials are supplied out-of-band via this Secret (key
+          # `driver-config-file.yaml`); nothing sensitive is committed.
+          existingConfigSecret: democratic-csi-driver-config
+          config:
+            # Required even when existingConfigSecret is set — the chart reads
+            # this value for templating decisions beyond Secret creation.
+            driver: synology-iscsi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: democratic-csi
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

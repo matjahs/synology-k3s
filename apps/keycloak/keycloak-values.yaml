@@ -35,6 +35,12 @@ postgresql:
   auth:
     username: keycloak
     database: keycloak
+  primary:
+    persistence:
+      enabled: true
+      size: 8Gi
+      # storageClass omitted on purpose -> uses the cluster-default
+      # StorageClass (synology-iscsi, provisioned by democratic-csi).
 
 replicaCount: 1
 

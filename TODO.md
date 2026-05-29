@@ -18,9 +18,12 @@ Ordered by priority. See commit history for the bug-fix / restructure work alrea
       `kubeconform` (with Gateway API / Cilium / cert-manager CRD schemas), `yamllint`,
       and `helm template` dry-run. _OK_
 - [ ] **Renovate** (or Dependabot for Helm/images) to auto-PR chart and image bumps. _OK_
-- [ ] **Storage + stateful backup.** Add a CSI driver for Synology (synology-csi,
-      iSCSI/NFS), size Keycloak's PostgreSQL PVC, and back up the DB (Velero or pg_dump
-      CronJob to the NAS). _Yes on the synology-csi_
+- [ ] **Storage + stateful backup.** _(CSI done; backup pending.)_ CSI driver added: `democratic-csi` (Synology
+      iSCSI) in `platform/democratic-csi-app.yaml`, exposing the cluster-default
+      `synology-iscsi` StorageClass; Keycloak's PostgreSQL PVC is sized (8Gi) onto it.
+      DSM creds are applied out-of-band (`democratic-csi-secret.example.yaml`) pending
+      the SOPS work. **Still open:** DB backup (Velero or pg_dump CronJob to the NAS),
+      and volume snapshots (needs external-snapshotter CRDs). See `platform/democratic-csi.md`.
 
 ## Tier 2 — strongly expected
 
