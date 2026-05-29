@@ -17,7 +17,7 @@ spec:
     # Images"/bitnamilegacy in 2025).
     - repoURL: registry-1.docker.io/bitnamicharts
       chart: keycloak
-      targetRevision: "24.4.1"
+      targetRevision: "25.3.2"
       helm:
         valueFiles:
           - $values/apps/keycloak/keycloak-values.yaml
