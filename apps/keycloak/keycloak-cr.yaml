@@ -30,6 +30,8 @@ spec:
     hostname: https://keycloak.lab.mxe11.nl
     strict: false
 
-  # Routing is handled by our Gateway API HTTPRoute, not the operator's Ingress.
+  # Ingress is Cilium via the Gateway API (gateway.yaml uses
+  # gatewayClassName: cilium; httproute.yaml routes to keycloak-service:8080).
+  # Disable the operator's classic Ingress so it doesn't compete with that.
   ingress:
     enabled: false

@@ -22,6 +22,8 @@ spec:
   parentRefs:
     - name: external-gateway
       namespace: kube-system
+  hostnames:
+    - argocd.lab.mxe11.nl
   rules:
     - matches:
         - path:
