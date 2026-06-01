@@ -1,0 +1,78 @@
+# ── services.yaml ────────────────────────────────────────────────────────────
+# Replace every href / ping with your actual lab FQDNs or IPs.
+# Icons: mdi-* (Material Design) and si-* (Simple Icons) are always available.
+#   Full list → https://gethomepage.dev/configs/services/#icons
+# ─────────────────────────────────────────────────────────────────────────────
+
+- VCF Core:
+    - SDDC Manager:
+        href: https://sddc-manager.vcf.lab
+        description: VCF Lifecycle & Workload Domain Management
+        icon: mdi-cloud-sync-outline
+        ping: sddc-manager.vcf.lab
+    - vCenter Server:
+        href: https://vcenter.vcf.lab/ui
+        description: vSphere Compute & VM Management
+        icon: mdi-server-network
+        ping: vcenter.vcf.lab
+    - vSAN:
+        href: https://vcenter.vcf.lab/ui/app/vsan
+        description: Hyper-Converged Storage
+        icon: mdi-harddisk
+    - ESXi Hosts:
+        href: https://esxi-01.vcf.lab
+        description: Bare-metal Hypervisors
+        icon: mdi-chip
+
+- Network & Security:
+    - NSX Manager:
+        href: https://nsx-manager.vcf.lab
+        description: Network Virtualization & Micro-segmentation
+        icon: mdi-shield-network-outline
+        ping: nsx-manager.vcf.lab
+    - NSX Edge:
+        href: https://nsx-manager.vcf.lab
+        description: T0 / T1 Gateways & Routing
+        icon: mdi-router-network
+    - Avi Controller:
+        href: https://avi.vcf.lab
+        description: NSX Advanced Load Balancer
+        icon: mdi-scale-balance
+
+- Management & Operations:
+    - Aria Suite LCM:
+        href: https://aria-lcm.vcf.lab
+        description: Aria Suite Lifecycle Manager
+        icon: mdi-package-variant-closed
+        ping: aria-lcm.vcf.lab
+    - Aria Operations:
+        href: https://aria-ops.vcf.lab
+        description: Monitoring & Performance Analytics
+        icon: mdi-chart-areaspline
+    - Aria Automation:
+        href: https://aria-auto.vcf.lab
+        description: Cloud Automation & Orchestration
+        icon: mdi-robot-outline
+    - Aria Log Insight:
+        href: https://aria-log.vcf.lab
+        description: Log Intelligence & Analytics
+        icon: mdi-text-search
+
+- Infrastructure:
+    - DS723+ (DSM):
+        href: https://nas.vcf.lab:5001
+        description: Synology NAS — Lab Storage & K3s Host
+        icon: mdi-nas
+        ping: nas.vcf.lab
+    - K3s Cluster:
+        href: https://k3s.vcf.lab
+        description: Lightweight Kubernetes on DS723+
+        icon: si-kubernetes
+    - Lab DNS / IPAM:
+        href: https://dns.vcf.lab
+        description: Internal DNS & IP Address Management
+        icon: mdi-dns-outline
+    - VPN Gateway:
+        href: https://vpn.vcf.lab
+        description: Lab VPN Entry Point
+        icon: mdi-vpn

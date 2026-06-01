@@ -1,0 +1,27 @@
+# ── widgets.yaml ─────────────────────────────────────────────────────────────
+# Top-of-page widgets: greeting, search bar, and live K3s cluster stats.
+# Docs: https://gethomepage.dev/widgets/
+# ─────────────────────────────────────────────────────────────────────────────
+
+- greeting:
+    text_size: xl
+    text: "VCF 9.1 Lab"
+
+- search:
+    provider: duckduckgo
+    target: _blank
+    focus: false
+
+# Live CPU / RAM stats pulled from K3s via the ServiceAccount
+- kubernetes:
+    cluster:
+      show: true
+      cpu: true
+      memory: true
+      showLabel: true
+      label: "DS723+ / K3s"
+    nodes:
+      show: true
+      cpu: true
+      memory: true
+      showLabel: true
