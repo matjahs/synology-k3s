@@ -1,0 +1,18 @@
+# TLS certs consumed by the shared external-gateway (kube-system). The Secrets
+# must live in kube-system (same namespace as the Gateway) so its listeners can
+# reference them without a ReferenceGrant. Issued by the cluster-wide
+# letsencrypt-prod ClusterIssuer via Cloudflare DNS-01 (letsencrypt-clusterissuer.yaml).
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: status-tls
+  namespace: kube-system
+spec:
+  secretName: status-tls
+  renewBefore: 720h  # renew 30 days before expiry
+  commonName: status.lab.mxe11.nl
+  dnsNames:
+    - status.lab.mxe11.nl
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

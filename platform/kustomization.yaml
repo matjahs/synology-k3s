@@ -9,3 +9,4 @@ resources:
   - argocd-ingress.yaml
   - l2-networking.yaml
   - letsencrypt-clusterissuer.yaml
+  - external-gateway-certs.yaml

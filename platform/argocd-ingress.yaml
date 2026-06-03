@@ -12,6 +12,24 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # Per-host TLS for status.lab.mxe11.nl. The cert is the `status-tls` Secret
+    # issued by cert-manager into kube-system (this Gateway's namespace) from the
+    # letsencrypt-prod ClusterIssuer — see external-gateway-certs.yaml. Argo CD
+    # and CyberChef stay HTTP for now (add their own https-<host> listeners when
+    # they get certs). from: All so the gatus HTTPRoute in `monitoring` attaches.
+    - name: https-status
+      protocol: HTTPS
+      port: 443
+      hostname: status.lab.mxe11.nl
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: status-tls
+            namespace: kube-system
+      allowedRoutes:
+        namespaces:
+          from: All
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

@@ -1,7 +1,11 @@
 # Gatus — status page & VCF lab health
 
 Self-hosted health monitoring with grouped checks and a status page, replacing
-Uptime Kuma. Reached at <https://status.lab.mxe11.nl>.
+Uptime Kuma. Reached at <https://status.lab.mxe11.nl> — TLS is terminated at the
+shared external-gateway via a Let's Encrypt cert (`status-tls`, issued by the
+`letsencrypt-prod` ClusterIssuer; the listener lives in
+[`platform/argocd-ingress.yaml`](../../platform/argocd-ingress.yaml) and the
+`Certificate` in [`platform/external-gateway-certs.yaml`](../../platform/external-gateway-certs.yaml)).
 
 ## Layout
 
@@ -9,7 +13,7 @@ Uptime Kuma. Reached at <https://status.lab.mxe11.nl>.
 |------|---------|
 | `gatus-app.yaml` | Argo CD `Application` (discovered by the root app-of-apps). |
 | `config.yaml` | Gatus config, rendered to a ConfigMap by kustomize. |
-| `deployment.yaml` / `service.yaml` / `httproute.yaml` / `pvc.yaml` | The app, its ClusterIP, the Gateway route, and SQLite storage (`synology-iscsi`). |
+| `deployment.yaml` / `service.yaml` / `httproute.yaml` / `pvc.yaml` | The app, its ClusterIP, the Gateway routes (TLS + http→https redirect), and SQLite storage (`synology-iscsi`). |
 | `cronjob.yaml` + `vcf-healthcheck.sh` | Push-based deep VCF checks (run every 5 min). |
 | `secret.example.yaml` | Template for `gatus-secrets` (credentials + push tokens). |
 
