@@ -4,15 +4,16 @@ metadata:
   name: keycloak-tls
   namespace: keycloak
 spec:
+  # Consumed by the Cilium Gateway https listener (gateway.yaml) to terminate
+  # TLS for keycloak.lab.mxe11.nl. Issued by Let's Encrypt via DNS-01 against
+  # the public mxe11.nl zone on Cloudflare (platform/letsencrypt-clusterissuer.yaml).
   secretName: keycloak-tls
-  duration: 87600h   # 10 years
+  # LE caps certs at 90 days; let cert-manager use the CA-issued lifetime and
+  # renew 30 days before expiry. (No explicit duration — the CA sets it.)
   renewBefore: 720h  # renew 30 days before expiry
-  subject:
-    organizations:
-      - lab.mxe11.nl
   commonName: keycloak.lab.mxe11.nl
   dnsNames:
     - keycloak.lab.mxe11.nl
   issuerRef:
-    name: keycloak-selfsigned
-    kind: Issuer
+    name: letsencrypt-prod
+    kind: ClusterIssuer

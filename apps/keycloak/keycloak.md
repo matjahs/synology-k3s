@@ -14,7 +14,7 @@ pull-availability risk after Bitnami moved its catalog to "Secure Images" /
 | Postgres `Cluster` | [`postgres-cluster.yaml`](postgres-cluster.yaml) | `keycloak-db`, 1 instance, 8Gi on `synology-iscsi` |
 | `Keycloak` CR | [`keycloak-cr.yaml`](keycloak-cr.yaml) | DB → `keycloak-db-rw:5432`, edge proxy (`xforwarded`), ingress disabled |
 | Gateway + HTTPRoutes | [`gateway.yaml`](gateway.yaml), [`httproute.yaml`](httproute.yaml) | TLS terminated at the Cilium Gateway; https → `keycloak-service:8080`, http → 301 https |
-| TLS cert (self-signed) | [`certificate.yaml`](certificate.yaml), [`certificate-issuer.yaml`](certificate-issuer.yaml) | Real PKI is a separate TODO |
+| TLS cert (Let's Encrypt) | [`certificate.yaml`](certificate.yaml) | Issued by the cluster-wide `letsencrypt-prod` ClusterIssuer ([`platform/letsencrypt-clusterissuer.yaml`](../../platform/letsencrypt-clusterissuer.yaml)) via Cloudflare DNS-01; auto-renews |
 
 Sync order: both operators are sync-wave `-1`; the `keycloak` app (the CRs) is
 wave `1`. Argo CD self-heal converges if a CR is applied before its CRD exists.
@@ -36,6 +36,23 @@ The same `keycloak-db-app` Secret is used by CNPG (to create the `keycloak`
 role) and by the Keycloak CR (to connect). CNPG's bootstrap and Keycloak both
 fail-and-retry until it exists — expected.
 
+### TLS / Let's Encrypt
+
+The `keycloak-tls` cert is issued by the cluster-wide `letsencrypt-prod`
+ClusterIssuer using **Cloudflare DNS-01** (HTTP-01 can't work — the cluster
+isn't publicly reachable, and `lab.mxe11.nl` is UniFi *local* DNS). That issuer
+needs a Cloudflare API token Secret in the `cert-manager` namespace, applied
+**out-of-band** — see
+[`platform/cert-manager-cloudflare-secret.example.yaml`](../../platform/cert-manager-cloudflare-secret.example.yaml).
+Until it exists, the `Certificate` stays `False`/`Pending` and the Gateway
+serves no usable cert. Check issuance with:
+
+```bash
+kubectl get certificate -n keycloak keycloak-tls
+kubectl describe certificate -n keycloak keycloak-tls   # events show DNS-01 progress
+kubectl get clusterissuer letsencrypt-prod
+```
+
 ## Access
 
 ```bash
@@ -46,8 +63,7 @@ kubectl get secret keycloak-initial-admin -n keycloak \
   -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
-Then browse to <https://keycloak.lab.mxe11.nl> (self-signed cert until real PKI
-lands).
+Then browse to <https://keycloak.lab.mxe11.nl> (trusted Let's Encrypt cert).
 
 ## Verify
 

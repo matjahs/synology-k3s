@@ -5,6 +5,8 @@
 .agent/
 .tool-versions.json
 
+cert-manager-cloudflare-secret.yaml
+
 # ignore copied .example files
 *.example
 *.env.example

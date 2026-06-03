@@ -1,0 +1,56 @@
+# Let's Encrypt ACME ClusterIssuers (reusable cluster-wide).
+#
+# lab.mxe11.nl is served as UniFi *local* DNS (172.16.0.1) and the cluster is
+# not publicly reachable, so neither HTTP-01 nor the local resolver can answer
+# ACME challenges. We validate via DNS-01 against the *public* mxe11.nl zone on
+# Cloudflare. The API token Secret lives in the cert-manager namespace and is
+# applied out-of-band — see cert-manager-cloudflare-secret.example.yaml.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  annotations:
+    # cert-manager CRDs/webhook come from cert-manager-app (wave -1); make sure
+    # this reconciles after them.
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: matjah@mxe11.nl
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - mxe11.nl
+---
+# Staging issuer — same config against LE's staging endpoint. Use it while
+# testing a new Certificate to avoid the production rate limits; it issues an
+# untrusted cert. Switch the Certificate's issuerRef to letsencrypt-prod once
+# the DNS-01 flow is confirmed working.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    email: matjah@mxe11.nl
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token
+              key: api-token
+        selector:
+          dnsZones:
+            - mxe11.nl

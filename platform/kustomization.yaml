@@ -8,3 +8,4 @@ kind: Kustomization
 resources:
   - argocd-ingress.yaml
   - l2-networking.yaml
+  - letsencrypt-clusterissuer.yaml

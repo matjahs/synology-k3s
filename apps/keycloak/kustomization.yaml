@@ -8,7 +8,6 @@ namespace: keycloak
 # Application is a plain Kustomize build of the resources below — no Helm.
 # The keycloak namespace is created via the Application's CreateNamespace=true.
 resources:
-  - certificate-issuer.yaml
   - certificate.yaml
   - gateway.yaml
   - httproute.yaml
