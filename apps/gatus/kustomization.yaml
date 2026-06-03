@@ -9,6 +9,7 @@ resources:
   - service.yaml
   - httproute.yaml
   - cronjob.yaml
+  - cronjob-nfs.yaml
 
 # Gatus reads every *.yaml under its config path. Rendering config.yaml as a
 # ConfigMap keeps monitoring fully declarative — edits go through git + Argo CD,
@@ -21,6 +22,10 @@ configMapGenerator:
   - name: gatus-vcf-scripts
     files:
       - vcf-healthcheck.sh
+  # The NFS read/write probe, mounted into the gatus-nfs CronJob.
+  - name: gatus-nfs-scripts
+    files:
+      - nfs-check.sh
 
 # NOTE: the `gatus-secrets` Secret (credentials + push tokens) is applied
 # out-of-band — see secret.example.yaml. It is intentionally NOT in git.

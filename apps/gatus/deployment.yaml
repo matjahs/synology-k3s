@@ -7,6 +7,7 @@ metadata:
     app.kubernetes.io/name: gatus
 spec:
   replicas: 1
+  revisionHistoryLimit: 1
   strategy:
     type: Recreate            # single RWO volume — don't run two pods at once
   selector:
@@ -64,6 +65,8 @@ spec:
             capabilities:
               drop:
                 - ALL
+              add:
+                - NET_RAW       # required for icmp:// (ping) checks; still non-root
             seccompProfile:
               type: RuntimeDefault
       volumes:

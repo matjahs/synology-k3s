@@ -1,10 +1,10 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: gatus-vcf
+  name: gatus-nfs
   namespace: monitoring
   labels:
-    app.kubernetes.io/name: gatus-vcf
+    app.kubernetes.io/name: gatus-nfs
 spec:
   schedule: "*/5 * * * *"          # every 5 minutes
   concurrencyPolicy: Forbid
@@ -12,35 +12,29 @@ spec:
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 120
+      activeDeadlineSeconds: 90
       backoffLimit: 1
       template:
         spec:
           restartPolicy: Never
           containers:
-            - name: vcf-healthcheck
-              # Alpine + curl + jq installed at start. Needs root for apk, so this
-              # pod runs as root (caps still dropped). To run rootless instead,
-              # bake a tiny curl+jq image and pin it here — see gatus.md.
+            - name: nfs-check
               image: alpine:3.20
               command: ["/bin/sh", "-c"]
               args:
-                - "apk add --no-cache curl jq >/dev/null && exec /bin/sh /scripts/vcf-healthcheck.sh"
+                - "apk add --no-cache curl >/dev/null && exec /bin/sh /scripts/nfs-check.sh"
               env:
                 - name: GATUS_URL
                   value: "http://gatus-svc.monitoring.svc.cluster.local"
-                - name: VC_HOST
-                  value: "vc-mgmt-a.site-a.vcf.lab"
-                - name: SDDC_HOST
-                  value: "sddcmanager-a.site-a.vcf.lab"
-              # VC_USER/VC_PASS/SDDC_USER/SDDC_PASS + TOK_* come from the Secret
               envFrom:
                 - secretRef:
-                    name: gatus-secrets
+                    name: gatus-secrets          # provides TOK_NFS
               volumeMounts:
                 - name: scripts
                   mountPath: /scripts
                   readOnly: true
+                - name: nfs-share
+                  mountPath: /nfs
               resources:
                 requests:
                   cpu: 25m
@@ -58,5 +52,12 @@ spec:
           volumes:
             - name: scripts
               configMap:
-                name: gatus-vcf-scripts
+                name: gatus-nfs-scripts
                 defaultMode: 0755
+            # DS723+ export on the storage network (VLAN50). The node must have
+            # L3 reachability to 172.16.50.0/24 for this mount to succeed.
+            - name: nfs-share
+              nfs:
+                server: "172.16.50.100"
+                path: "/volume3/vcf"
+                readOnly: false

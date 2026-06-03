@@ -43,8 +43,12 @@ Each external endpoint has a `heartbeat`, so a stalled CronJob also alerts.
    The `TOK_*` values are arbitrary shared strings but must match the
    `external-endpoints[].token` entries in `config.yaml`.
 
-2. **Adjust hosts** in `config.yaml` (the `*.vcf.lab` FQDNs and ESXi host
-   list) and in `cronjob.yaml` (`VC_HOST`, `SDDC_HOST`).
+2. **Hosts** in `config.yaml` are sourced from Infoblox IPAM (zone
+   `site-a.vcf.lab`) and mirror the live dashboard. Three entries are inferred
+   and worth confirming: `vCenter - Admin` / `VCF Operations - Admin` use the
+   VAMI port `:5480`, and `Dell PowerEdge T550` is disabled until you set its
+   iDRAC address (no Infoblox record exists). `cronjob.yaml` uses
+   `vc-mgmt-a` / `sddcmanager-a`.
 
 3. **Commit & push** — Argo CD syncs the `gatus` Application automatically.
 

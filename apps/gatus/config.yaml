@@ -2,6 +2,9 @@
 # Gatus configuration  —  https://gatus.io/docs
 # Rendered into a ConfigMap by kustomize. Secrets are injected as env vars
 # from the `gatus-secrets` Secret and referenced here as ${VAR}.
+#
+# Endpoint set mirrors the live lab dashboard. FQDNs/IPs sourced from Infoblox
+# IPAM (zone site-a.vcf.lab).
 # ---------------------------------------------------------------------------
 
 storage:
@@ -9,7 +12,7 @@ storage:
   path: /data/data.db
 
 ui:
-  title: "mxe11 Status"
+  title: "VCF Lab Status"
   header: "mxe11 Home Lab"
 
 # Notifications (optional). Uncomment + add `alerts:` to any endpoint.
@@ -18,60 +21,36 @@ ui:
 #     webhook-url: "${SLACK_WEBHOOK}"
 
 endpoints:
-  # ----------------------- GROUP: Infrastructure ---------------------
-  - name: Synology NAS
-    group: Infrastructure
-    url: "icmp://synology.mxe11.nl"
-    interval: 60s
-    conditions:
-      - "[CONNECTED] == true"
-
-  - name: Synology DSM
-    group: Infrastructure
-    url: "https://synology.mxe11.nl:5001"
-    interval: 60s
-    conditions:
-      - "[STATUS] == 200"
-      - "[CERTIFICATE_EXPIRATION] > 240h"
-
-  - name: ArgoCD
-    group: Infrastructure
-    url: "https://argocd.lab.mxe11.nl"
-    interval: 60s
-    conditions:
-      - "[STATUS] == 200"
-      - "[CERTIFICATE_EXPIRATION] > 240h"
-
   # ----------------------- GROUP: VCF - Management ------------------
-  - name: SDDC Manager UI
+  - name: vCenter
     group: VCF - Management
-    url: "https://sddc-manager.vcf.lab"
-    interval: 2m
-    conditions:
-      - "[STATUS] == 200"
-      - "[CERTIFICATE_EXPIRATION] > 240h"
-
-  - name: vCenter UI
-    group: VCF - Management
-    url: "https://vcenter.vcf.lab/ui/"
+    url: "https://vc-mgmt-a.site-a.vcf.lab/ui/"          # 10.1.1.10
     interval: 60s
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
       - "[RESPONSE_TIME] < 2000"
 
-  - name: NSX Manager UI
+  - name: vCenter - Admin
     group: VCF - Management
-    url: "https://nsx.vcf.lab/login.jsp"
+    url: "https://vc-mgmt-a.site-a.vcf.lab:5480/"        # VAMI appliance mgmt
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  - name: NSX Manager
+    group: VCF - Management
+    url: "https://nsx-mgmt-a.site-a.vcf.lab/login.jsp"   # 10.1.1.20 (VIP; nodes .21-.23)
     interval: 60s
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
 
   # NSX cluster health — deep check via native Basic auth (NSX_AUTH = base64 user:pass)
-  - name: NSX Cluster Status
+  - name: NSX Manager - Cluster Status
     group: VCF - Management
-    url: "https://nsx.vcf.lab/api/v1/cluster/status"
+    url: "https://nsx-mgmt-a.site-a.vcf.lab/api/v1/cluster/status"
     interval: 2m
     headers:
       Authorization: "Basic ${NSX_AUTH}"
@@ -81,38 +60,125 @@ endpoints:
       - "[BODY].mgmt_cluster_status.status == STABLE"
       - "[BODY].control_cluster_status.status == STABLE"
 
-  # ----------------------- GROUP: VCF - ESXi Hosts -----------------
-  - name: esxi-01
-    group: VCF - ESXi Hosts
-    url: "https://esxi-01.vcf.lab/ui/"
+  - name: Supervisor Kubernetes API
+    group: VCF - Management
+    url: "https://supervisor-mgmt-a.site-a.vcf.lab:6443/healthz"  # 10.1.1.85
+    interval: 60s
+    client:
+      insecure: true          # Supervisor serves its own k8s CA cert
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY] == ok"
+
+  # ----------------------- GROUP: VCF - Compute (ESXi) -------------
+  - name: ESX 01
+    group: VCF - Compute
+    url: "https://esx-01a.site-a.vcf.lab/ui/"            # 10.1.1.101
     interval: 2m
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
 
-  - name: esxi-02
-    group: VCF - ESXi Hosts
-    url: "https://esxi-02.vcf.lab/ui/"
+  - name: ESX 02
+    group: VCF - Compute
+    url: "https://esx-02a.site-a.vcf.lab/ui/"            # 10.1.1.102
     interval: 2m
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
 
-  - name: esxi-03
-    group: VCF - ESXi Hosts
-    url: "https://esxi-03.vcf.lab/ui/"
+  # ----------------------- GROUP: VCF - Operations & Automation ----
+  - name: VCF Operations
+    group: VCF - Operations
+    url: "https://ops-a.site-a.vcf.lab/ui/"              # 10.1.1.30
     interval: 2m
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
 
-  - name: esxi-04
-    group: VCF - ESXi Hosts
-    url: "https://esxi-04.vcf.lab/ui/"
+  - name: VCF Operations - Admin
+    group: VCF - Operations
+    url: "https://ops-a.site-a.vcf.lab/admin/"            # VAMI appliance mgmt
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: VCF Operations for Networks
+    group: VCF - Operations
+    url: "https://opsnet-a.site-a.vcf.lab/"              # 10.1.1.60
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: VCF Automation
+    group: VCF - Operations
+    url: "https://auto-a.site-a.vcf.lab/"               # 10.1.1.70
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+
+  # ----------------------- GROUP: Networking -----------------------
+  - name: Avi Load Balancer
+    group: Networking
+    url: "https://alb-a.site-a.vcf.lab/"                 # 10.1.1.90
     interval: 2m
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  - name: Holo-Router - resolve google.com
+    group: Networking
+    url: "10.1.1.1"                                      # router-a / dns.site-a
+    interval: 60s
+    dns:
+      query-name: "google.com"
+      query-type: "A"
+    conditions:
+      - "[DNS_RCODE] == NOERROR"
+
+  # ----------------------- GROUP: Infrastructure -------------------
+  - name: Infoblox
+    group: Infrastructure
+    url: "https://infoblox.lab.mxe11.nl/"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: Keycloak
+    group: Infrastructure
+    url: "https://keycloak.lab.mxe11.nl/"
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  # ----------------------- GROUP: Storage --------------------------
+  # Reachability of the NFS service on the DS723+ storage network (VLAN50).
+  - name: NFS Service (DS723+)
+    group: Storage
+    url: "tcp://172.16.50.100:2049"                      # /volume3/vcf export
+    interval: 60s
+    conditions:
+      - "[CONNECTED] == true"
+
+  # Dell PowerEdge T550 — physical host's iDRAC (out-of-band mgmt).
+  # icmp:// works because the Deployment grants the NET_RAW capability.
+  - name: Dell PowerEdge T550 (iDRAC)
+    group: Infrastructure
+    url: "icmp://idrac.lab.mxe11.nl"                     # 172.16.30.10
+    interval: 2m
+    conditions:
+      - "[CONNECTED] == true"
+
+  # The physical hypervisor that runs the whole nested VCF lab.
+  - name: Physical ESX Host
+    group: Infrastructure
+    url: "https://esx.lab.mxe11.nl/ui/"                  # 172.16.30.11
+    interval: 2m
+    client:
+      insecure: true
+    conditions:
+      - "[STATUS] == 200"
 
 # =====================================================================
 #  VCF LAB  —  push-based DEEP health (populated by the gatus-vcf CronJob).
@@ -135,5 +201,12 @@ external-endpoints:
   - name: sddc-manager-health
     group: VCF - Deep Health
     token: "${TOK_SDDC}"
+    heartbeat:
+      interval: 15m
+
+  # Functional read/write probe of the DS723+ NFS export (gatus-nfs CronJob).
+  - name: nfs-share-readwrite
+    group: Storage
+    token: "${TOK_NFS}"
     heartbeat:
       interval: 15m
