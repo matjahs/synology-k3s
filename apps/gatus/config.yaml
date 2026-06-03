@@ -26,6 +26,8 @@ endpoints:
     group: VCF - Management
     url: "https://vc-mgmt-a.site-a.vcf.lab/ui/"          # 10.1.1.10
     interval: 60s
+    client:
+      insecure: true          # internal CA (VMCA/AD CS) not in Gatus trust store
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
@@ -35,6 +37,8 @@ endpoints:
     group: VCF - Management
     url: "https://vc-mgmt-a.site-a.vcf.lab:5480/"        # VAMI appliance mgmt
     interval: 2m
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
@@ -43,6 +47,8 @@ endpoints:
     group: VCF - Management
     url: "https://nsx-mgmt-a.site-a.vcf.lab/login.jsp"   # 10.1.1.20 (VIP; nodes .21-.23)
     interval: 60s
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
@@ -52,6 +58,8 @@ endpoints:
     group: VCF - Management
     url: "https://nsx-mgmt-a.site-a.vcf.lab/api/v1/cluster/status"
     interval: 2m
+    client:
+      insecure: true
     headers:
       Authorization: "Basic ${NSX_AUTH}"
     conditions:
@@ -75,6 +83,8 @@ endpoints:
     group: VCF - Compute
     url: "https://esx-01a.site-a.vcf.lab/ui/"            # 10.1.1.101
     interval: 2m
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
@@ -83,6 +93,8 @@ endpoints:
     group: VCF - Compute
     url: "https://esx-02a.site-a.vcf.lab/ui/"            # 10.1.1.102
     interval: 2m
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
@@ -92,6 +104,8 @@ endpoints:
     group: VCF - Operations
     url: "https://ops-a.site-a.vcf.lab/ui/"              # 10.1.1.30
     interval: 2m
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
@@ -100,6 +114,8 @@ endpoints:
     group: VCF - Operations
     url: "https://ops-a.site-a.vcf.lab/admin/"            # VAMI appliance mgmt
     interval: 2m
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
 
@@ -107,6 +123,8 @@ endpoints:
     group: VCF - Operations
     url: "https://opsnet-a.site-a.vcf.lab/"              # 10.1.1.60
     interval: 2m
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
 
@@ -114,6 +132,8 @@ endpoints:
     group: VCF - Operations
     url: "https://auto-a.site-a.vcf.lab/"               # 10.1.1.70
     interval: 2m
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
 
@@ -122,6 +142,8 @@ endpoints:
     group: Networking
     url: "https://alb-a.site-a.vcf.lab/"                 # 10.1.1.90
     interval: 2m
+    client:
+      insecure: true
     conditions:
       - "[STATUS] == 200"
       - "[CERTIFICATE_EXPIRATION] > 240h"
