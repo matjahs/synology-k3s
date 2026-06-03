@@ -1,3 +1,14 @@
+.env*
+*.env
+.claude/
+.gemini/
+.agent/
+.tool-versions.json
+
+# ignore copied .example files
+*.example
+*.env.example
+
 # macOS
 .DS_Store
 

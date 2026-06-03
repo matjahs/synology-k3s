@@ -1,0 +1,139 @@
+# ---------------------------------------------------------------------------
+# Gatus configuration  —  https://gatus.io/docs
+# Rendered into a ConfigMap by kustomize. Secrets are injected as env vars
+# from the `gatus-secrets` Secret and referenced here as ${VAR}.
+# ---------------------------------------------------------------------------
+
+storage:
+  type: sqlite
+  path: /data/data.db
+
+ui:
+  title: "mxe11 Status"
+  header: "mxe11 Home Lab"
+
+# Notifications (optional). Uncomment + add `alerts:` to any endpoint.
+# alerting:
+#   slack:
+#     webhook-url: "${SLACK_WEBHOOK}"
+
+endpoints:
+  # ----------------------- GROUP: Infrastructure ---------------------
+  - name: Synology NAS
+    group: Infrastructure
+    url: "icmp://synology.mxe11.nl"
+    interval: 60s
+    conditions:
+      - "[CONNECTED] == true"
+
+  - name: Synology DSM
+    group: Infrastructure
+    url: "https://synology.mxe11.nl:5001"
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  - name: ArgoCD
+    group: Infrastructure
+    url: "https://argocd.lab.mxe11.nl"
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  # ----------------------- GROUP: VCF - Management ------------------
+  - name: SDDC Manager UI
+    group: VCF - Management
+    url: "https://sddc-manager.vcf.lab"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  - name: vCenter UI
+    group: VCF - Management
+    url: "https://vcenter.vcf.lab/ui/"
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+      - "[RESPONSE_TIME] < 2000"
+
+  - name: NSX Manager UI
+    group: VCF - Management
+    url: "https://nsx.vcf.lab/login.jsp"
+    interval: 60s
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  # NSX cluster health — deep check via native Basic auth (NSX_AUTH = base64 user:pass)
+  - name: NSX Cluster Status
+    group: VCF - Management
+    url: "https://nsx.vcf.lab/api/v1/cluster/status"
+    interval: 2m
+    headers:
+      Authorization: "Basic ${NSX_AUTH}"
+    conditions:
+      - "[STATUS] == 200"
+      - "[BODY].detailed_cluster_status.overall_status == STABLE"
+      - "[BODY].mgmt_cluster_status.status == STABLE"
+      - "[BODY].control_cluster_status.status == STABLE"
+
+  # ----------------------- GROUP: VCF - ESXi Hosts -----------------
+  - name: esxi-01
+    group: VCF - ESXi Hosts
+    url: "https://esxi-01.vcf.lab/ui/"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  - name: esxi-02
+    group: VCF - ESXi Hosts
+    url: "https://esxi-02.vcf.lab/ui/"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  - name: esxi-03
+    group: VCF - ESXi Hosts
+    url: "https://esxi-03.vcf.lab/ui/"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+  - name: esxi-04
+    group: VCF - ESXi Hosts
+    url: "https://esxi-04.vcf.lab/ui/"
+    interval: 2m
+    conditions:
+      - "[STATUS] == 200"
+      - "[CERTIFICATE_EXPIRATION] > 240h"
+
+# =====================================================================
+#  VCF LAB  —  push-based DEEP health (populated by the gatus-vcf CronJob).
+#  Tokens expire, so Gatus can't poll these directly. Tokens come from the
+#  gatus-secrets Secret and must match what the CronJob script sends.
+# =====================================================================
+external-endpoints:
+  - name: vcenter-appliance-health
+    group: VCF - Deep Health
+    token: "${TOK_VCENTER}"
+    heartbeat:
+      interval: 15m
+
+  - name: vsan-health
+    group: VCF - Deep Health
+    token: "${TOK_VSAN}"
+    heartbeat:
+      interval: 15m
+
+  - name: sddc-manager-health
+    group: VCF - Deep Health
+    token: "${TOK_SDDC}"
+    heartbeat:
+      interval: 15m

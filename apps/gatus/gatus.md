@@ -1,0 +1,62 @@
+# Gatus — status page & VCF lab health
+
+Self-hosted health monitoring with grouped checks and a status page, replacing
+Uptime Kuma. Reached at <https://status.lab.mxe11.nl>.
+
+## Layout
+
+| File | Purpose |
+|------|---------|
+| `gatus-app.yaml` | Argo CD `Application` (discovered by the root app-of-apps). |
+| `config.yaml` | Gatus config, rendered to a ConfigMap by kustomize. |
+| `deployment.yaml` / `service.yaml` / `httproute.yaml` / `pvc.yaml` | The app, its ClusterIP, the Gateway route, and SQLite storage (`synology-iscsi`). |
+| `cronjob.yaml` + `vcf-healthcheck.sh` | Push-based deep VCF checks (run every 5 min). |
+| `secret.example.yaml` | Template for `gatus-secrets` (credentials + push tokens). |
+
+## Check tiers
+
+**Tier 1 — native polling** (in `config.yaml`): UI reachability, TLS cert
+expiry and response time for SDDC Manager, vCenter, NSX and the ESXi hosts.
+The **NSX cluster status** check is a real deep check — NSX accepts Basic auth,
+so Gatus polls `/api/v1/cluster/status` and asserts every group is `STABLE`.
+
+**Tier 2 — push-based deep checks** (`external-endpoints` + CronJob): the
+token-authenticated APIs can't be polled directly (tokens expire), so the
+CronJob logs in and pushes results to Gatus:
+
+- **vCenter** — `POST /api/session` → `GET /api/appliance/health/system` (pass only on `green`).
+- **vSAN** — storage subsystem health via the same vCenter session.
+- **SDDC Manager** — `POST /v1/tokens` → `GET /v1/domains` (fails if any domain ≠ `ACTIVE`).
+
+Each external endpoint has a `heartbeat`, so a stalled CronJob also alerts.
+
+## Setup
+
+1. **Create the secret** (never committed):
+
+   ```sh
+   cp secret.example.yaml gatus.secret      # .secret is gitignored
+   # edit values — NSX_AUTH = $(printf 'admin:PASS' | base64)
+   kubectl apply -n monitoring -f gatus.secret
+   ```
+
+   The `TOK_*` values are arbitrary shared strings but must match the
+   `external-endpoints[].token` entries in `config.yaml`.
+
+2. **Adjust hosts** in `config.yaml` (the `*.vcf.lab` FQDNs and ESXi host
+   list) and in `cronjob.yaml` (`VC_HOST`, `SDDC_HOST`).
+
+3. **Commit & push** — Argo CD syncs the `gatus` Application automatically.
+
+## Notes / TODO
+
+- The CronJob uses `alpine:3.20` and `apk add curl jq` at start, so it runs as
+  root (capabilities still dropped). To run rootless, bake a tiny pinned
+  `curl + jq` image and set it as the container `image`, then re-add
+  `runAsNonRoot: true` / `runAsUser: 1000`.
+- vSAN currently uses vCenter's storage-subsystem health as a proxy. For true
+  per-cluster vSAN disk-group health, extend `vcf-healthcheck.sh` with the vSAN
+  health API.
+- SDDC token field names (`accessToken`, `.elements[].status`) are stable across
+  VCF 9.x; confirm against the 9.1 build if a check misbehaves.
+- Optional: add Gatus to the Homepage dashboard (`apps/homepage/config/services.yaml`).

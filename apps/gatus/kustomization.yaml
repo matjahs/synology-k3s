@@ -1,0 +1,26 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - pvc.yaml
+  - deployment.yaml
+  - service.yaml
+  - httproute.yaml
+  - cronjob.yaml
+
+# Gatus reads every *.yaml under its config path. Rendering config.yaml as a
+# ConfigMap keeps monitoring fully declarative — edits go through git + Argo CD,
+# and the name-suffix hash rolls the pod whenever the config changes.
+configMapGenerator:
+  - name: gatus-config
+    files:
+      - config.yaml
+  # The VCF deep-health script, mounted into the CronJob.
+  - name: gatus-vcf-scripts
+    files:
+      - vcf-healthcheck.sh
+
+# NOTE: the `gatus-secrets` Secret (credentials + push tokens) is applied
+# out-of-band — see secret.example.yaml. It is intentionally NOT in git.
