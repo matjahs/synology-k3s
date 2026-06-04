@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: corp-ca01-credentials
+  namespace: cert-manager
+type: Opaque
+stringData:
+  username: "corp\\svc-certmanager"
+  password: VMware123!VMware123!
+---
+apiVersion: adcs.certmanager.csf.nokia.com/v1
+kind: ClusterAdcsIssuer
+metadata:
+  name: corp-ca01
+spec:
+  caBundle: "-----BEGIN CERTIFICATE-----MIIFsjCCA5qgAwIBAgIQWaWblV76aphMvhFYSHvnRzANBgkqhkiG9w0BAQsFADBYMRIwEAYKCZImiZPyLGQBGRYCbmwxFTATBgoJkiaJk/IsZAEZFgVteGUxMTEUMBIGCgmSJomT8ixkARkWBGNvcnAxFTATBgNVBAMTDENPUlAgUm9vdCBDQTAeFw0yNjA1MzAxNzMxNDJaFw0zNjA1MzAxNzQxNDFaMFgxEjAQBgoJkiaJk/IsZAEZFgJubDEVMBMGCgmSJomT8ixkARkWBW14ZTExMRQwEgYKCZImiZPyLGQBGRYEY29ycDEVMBMGA1UEAxMMQ09SUCBSb290IENBMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA42WeHmWN3iZ9ws5DDi9yoL/EfLThJALC+bil5nEs/LhUR2bbBft3jE0aL8ZjVNTXzOq2WTrp5CzRuCWxeh2vXQYMtUbwAuO6ZUInWqqo7piPzs7WpgWQvROqt1eMOprRYxjGb/XCNx9NeROuKbdOKAlXNVWi0tU1ERyDSDg0CwWjJZT/4DqgUNA6VN7J+7VFte73Dvh4c2j1Llc/rh3H0sra41MfERMgk2Hvs9Aem/ZWfYSuvW2vl1+wXe3Dc5UUnL8TBPAP0ESGkJAVEl9g7i1bVijJjdryw2HoFnTKmgsVlY97eWfqlLAXWCCU5vK5aRDzW8Vw9Xasvj7Bf5VzZla5LvAWEAXUe6FGoFpVVCjaTLT6O3XV/lfLSgrGYklErhg60odVPpo9DAdyyTrV8Nhr1uhyiq+srz3iigrpFiSa1s5T8WglJhO/RU+SX++5bXlDLUtGit3hkeuTCu/hSjx5OWLfXGFIpTAzytqYjhZsbgEb8FnNKdUDzDNp8m0wBi/b/ow6pWnDKR1xkIx2HMPSZSF2bVNI084gS4ZtVtGBgadswoHcPcWsMI/QWqRjDasuORe5YxyE6Yd+tbgrhTEKZJL8mZ8CXB+b8QEsYeaJNSi4WBOnuIAyvkLOxcmKL//jBwZCpkIVPi/NfXypt7S3k4bhYaWB8XTQrEdRyd0CAwEAAaN4MHYwCwYDVR0PBAQDAgGGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFH74xu+fDKnM2RmaS9Rd5cVWAHtYMBIGCSsGAQQBgjcVAQQFAgMCAAIwIwYJKwYBBAGCNxUCBBYEFEu7djlr2reAHV3gw2NYYsYGEzGdMA0GCSqGSIb3DQEBCwUAA4ICAQBq7a+2pC8IPnwvBKrh5JU40Yeh9VA+9Hc6SRfguxmKZtQ1fqd4rkF8Ebn0fL6AP8FUQ3dRe9xSvjVdqtDMqHi1QW2aWsUSyvovaJaT0sKFEFnvTf7GiVn93SYzAyytXWhLAYBN1ex/NLQYph+bAbSJMmz+X6m1kBrqoeryKBUaGUY8oI4Bj8TJ1v7EdnUA4g0jve1XNFWK77C0Ym5kOuxXospUsNkiBSYMDvooLbwgGVzSmaF0D5lTcjciVCfuSQXdOC00tF5sZgvxUhGtsoh0FdCqtz8tsYJ11w4H8GFwkPu93cEZ0up3w89CzhW9xTeA6hMZVCtuD3AZZLyxKm/XEpHVrHHAyIABRRGI03Qxj9Yqfk8xtIuzyIPE3brSy/G3+ApI0Lwe4z/by1Ot72vBjAsqD/rCUcLdx1QAJb5pJpVipd5Be8W1z9fnXjz5gjA+ZoADvU7YMrJ9k+m0icQUxZUEpceKhikXNx2RxElfYvV7CaB5LXeFbULAWXEeXRZxCSPQKoACn1flW2wjET8SFnPLCBgE7TjAmfuU6CotNc9Fk3fC0aFGcl1G/R7wkwFL4B7YbAIuLuuDmvR01L6vwjRPaF27ykJvmAulIHtftKgYkYyRD1yTJRRs/aa9eW0/AZeyf4y3ikweepSSXCjlDI88B8EfP8wMVfmNXjvI0g==-----END CERTIFICATE-----"
+  credentialsRef:
+    name: corp-ca01-credentials
+    namespace: cert-manager
+  url: https://CORP-CA01.corp.mxe11.nl/certsrv
+  templateName: VCF Web Server
+  retryInterval: 1m
+  statusCheckInterval: 6h
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: keycloak-tls
+  namespace: keycloak
+spec:
+  secretName: keycloak-tls
+  issuerRef:
+    name: corp-ca01
+    kind: ClusterAdcsIssuer
+    group: adcs.certmanager.csf.nokia.com
+  commonName: keycloak.lab.mxe11.nl
+  dnsNames:
+  - keycloak.lab.mxe11.nl
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    algorithm: RSA
+    size: 2048

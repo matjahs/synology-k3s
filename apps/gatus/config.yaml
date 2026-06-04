@@ -35,7 +35,7 @@ endpoints:
 
   - name: vCenter - Admin
     group: VCF - Management
-    url: "https://vc-mgmt-a.site-a.vcf.lab:5480/"        # VAMI appliance mgmt
+    url: "icmp://vc-mgmt-a.site-a.vcf.lab:5480"        # VAMI appliance mgmt
     interval: 2m
     client:
       insecure: true
@@ -45,7 +45,7 @@ endpoints:
 
   - name: NSX Manager
     group: VCF - Management
-    url: "https://nsx-mgmt-a.site-a.vcf.lab/login.jsp"   # 10.1.1.20 (VIP; nodes .21-.23)
+    url: "https://nsx-mgmt-01a.site-a.vcf.lab/login.jsp"   # 10.1.1.20 (VIP; nodes .21-.23)
     interval: 60s
     client:
       insecure: true
@@ -70,13 +70,23 @@ endpoints:
 
   - name: Supervisor Kubernetes API
     group: VCF - Management
-    url: "https://supervisor-mgmt-a.site-a.vcf.lab:6443/healthz"  # 10.1.1.85
+    url: https://supervisor-mgmt-a.site-a.vcf.lab:6443/healthz
     interval: 60s
     client:
-      insecure: true          # Supervisor serves its own k8s CA cert
+      insecure: true
     conditions:
       - "[STATUS] == 200"
-      - "[BODY] == ok"
+      - "[BODY].status != Failure"
+      - "[BODY].code != 401"
+
+  - name: VCF Identity Manager
+    group: VCF - Management
+    url: "icmp://vidm-a.site-a.vcf.lab"
+    interval: 60s
+    client:
+      insecure: true
+    conditions:
+      - "[CONNECTED] == true"
 
   # ----------------------- GROUP: VCF - Compute (ESXi) -------------
   - name: ESX 01
@@ -121,7 +131,7 @@ endpoints:
 
   - name: VCF Operations for Networks
     group: VCF - Operations
-    url: "https://opsnet-a.site-a.vcf.lab/"              # 10.1.1.60
+    url: "https://opsnet-01a.site-a.vcf.lab/"              # 10.1.1.60
     interval: 2m
     client:
       insecure: true
@@ -131,6 +141,15 @@ endpoints:
   - name: VCF Automation
     group: VCF - Operations
     url: "https://auto-a.site-a.vcf.lab/"               # 10.1.1.70
+    interval: 2m
+    client:
+      insecure: true
+    conditions:
+      - "[STATUS] == 200"
+
+  - name: VCF Automation Platform
+    group: VCF - Operations
+    url: "icmp://auto-platform-a.site-a.vcf.lab/"               # 10.1.1.70
     interval: 2m
     client:
       insecure: true
