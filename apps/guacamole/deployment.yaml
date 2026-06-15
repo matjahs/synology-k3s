@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guacamole
+  namespace: tools
+  labels:
+    app.kubernetes.io/name: guacamole
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: guacamole
+  template:
+    metadata:
+      labels:
+        app: guacamole
+    spec:
+      containers:
+        - name: guacd
+          image: guacamole/guacd:1.5.5
+          ports:
+            - containerPort: 4822
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            tcpSocket:
+              port: 4822
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 4822
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+        - name: guacamole
+          image: guacamole/guacamole:1.5.5
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: GUACD_HOSTNAME
+              value: localhost
+            - name: GUACD_PORT
+              value: "4822"
+            - name: POSTGRESQL_HOSTNAME
+              value: keycloak-db-rw.keycloak.svc.cluster.local
+            - name: POSTGRESQL_DATABASE
+              value: guacamole
+            - name: POSTGRESQL_USERNAME
+              value: guacamole
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-db-app
+                  key: password
+            - name: OPENID_AUTHORIZATION_ENDPOINT
+              value: https://keycloak.lab.mxe11.nl/realms/lab/protocol/openid-connect/auth
+            - name: OPENID_JWKS_ENDPOINT
+              value: https://keycloak.lab.mxe11.nl/realms/lab/protocol/openid-connect/certs
+            - name: OPENID_ISSUER
+              value: https://keycloak.lab.mxe11.nl/realms/lab
+            - name: OPENID_CLIENT_ID
+              value: guacamole
+            - name: OPENID_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-oidc-secret
+                  key: client-secret
+            - name: OPENID_REDIRECT_URI
+              value: https://guacamole.lab.mxe11.nl/guacamole/
+            - name: OPENID_USERNAME_CLAIM_TYPE
+              value: preferred_username
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /guacamole/
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /guacamole/
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
