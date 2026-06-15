@@ -18,6 +18,18 @@ spec:
     # data volume's backend is unambiguous.
     storageClass: synology-iscsi
 
+  managed:
+    databases:
+      - name: guacamole
+        ensure: present
+        owner: guacamole
+    roles:
+      - name: guacamole
+        ensure: present
+        login: true
+        passwordSecret:
+          name: guacamole-db-creds
+
   bootstrap:
     initdb:
       database: keycloak
