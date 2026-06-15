@@ -17,7 +17,7 @@ These steps are out-of-band and must be done before ArgoCD syncs, or ExternalSec
 **1. Vault Kubernetes auth (one-time setup):**
 
 ```bash
-# Grab the k3s CA cert from the cluster
+### Grab the k3s CA cert from the cluster
 kubectl get configmap -n kube-system kube-root-ca.crt -o jsonpath='{.data.ca\.crt}' > /tmp/k3s-ca.crt
 
 vault auth enable kubernetes
@@ -39,7 +39,7 @@ vault write auth/kubernetes/role/external-secrets \
 **2. Vault KV paths (populate before or immediately after first sync):**
 
 ```bash
-# Enable KV v2 if not already enabled
+### Enable KV v2 if not already enabled
 vault secrets enable -path=secret kv-v2
 
 vault kv put secret/keycloak/db \
@@ -52,7 +52,7 @@ vault kv put secret/cert-manager/cloudflare \
 vault kv put secret/guacamole/db \
   password=<strong-password>
 
-# Populated after KeycloakRealmImport creates the client — see Task 12
+### Populated after KeycloakRealmImport creates the client — see Task 12
 vault kv put secret/guacamole/oidc \
   client-secret=<retrieved-from-keycloak>
 ```
@@ -61,7 +61,7 @@ vault kv put secret/guacamole/oidc \
 
 ## File Map
 
-```
+```plain
 platform/
   external-secrets-app.yaml          CREATE  ArgoCD Application for ESO Helm chart (wave -1)
   vault-secret-store.yaml            CREATE  ClusterSecretStore pointing at vault.mxe11.nl
@@ -125,7 +125,7 @@ find . -path ./.git -prune -o -name '*-app.yaml' -print0 \
 
 **Files:** Create `platform/external-secrets-app.yaml`
 
-- [ ] Create the file. Pin to a specific chart version — check the latest at https://github.com/external-secrets/external-secrets/releases before writing (replace `0.9.19` if newer stable exists):
+- [ ] Create the file. Pin to a specific chart version — check the latest at <https://github.com/external-secrets/external-secrets/releases> before writing (replace `2.6.0` if newer stable exists):
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -140,7 +140,7 @@ spec:
   source:
     repoURL: https://charts.external-secrets.io
     chart: external-secrets
-    targetRevision: "0.9.19"
+    targetRevision: "2.6.0"
     helm:
       values: |
         installCRDs: true
@@ -611,9 +611,9 @@ spec:
 **Files:** Create `apps/guacamole/deployment.yaml`
 
 - [ ] Before writing, pin the image versions. Check Docker Hub for the latest stable tag:
-  - `guacamole/guacamole` — https://hub.docker.com/r/guacamole/guacamole/tags
-  - `guacamole/guacd` — https://hub.docker.com/r/guacamole/guacd/tags
-  
+  - `guacamole/guacamole` — <https://hub.docker.com/r/guacamole/guacamole/tags>
+  - `guacamole/guacd` — <https://hub.docker.com/r/guacamole/guacd/tags>
+
   Both use the same version tag. As of the spec date, `1.5.5` is the latest stable. Replace below if a newer version exists.
 
 - [ ] Create `apps/guacamole/deployment.yaml`:
@@ -886,7 +886,7 @@ kubectl get keycloakrealmimport -n keycloak lab
 # STATUS should be Done
 ```
 
-- [ ] Retrieve the auto-generated client secret. Log into https://keycloak.lab.mxe11.nl with the initial admin credentials:
+- [ ] Retrieve the auto-generated client secret. Log into <https://keycloak.lab.mxe11.nl> with the initial admin credentials:
 
 ```bash
 kubectl get secret keycloak-initial-admin -n keycloak \
@@ -989,6 +989,7 @@ kubectl get clustersecretstore vault
 kubectl get externalsecret -A
 # All should show READY=True and STATUS=SecretSynced
 ```
+
 ```
 
 - [ ] Create `apps/guacamole/guacamole.md`:
@@ -1038,6 +1039,7 @@ kubectl get externalsecret -n tools                # SecretSynced
 kubectl get job -n tools guacamole-db-init         # Complete
 kubectl logs job/guacamole-db-init -n tools        # "Done." or "Schema already initialized"
 ```
+
 ```
 
 - [ ] Commit: `git add platform/external-secrets.md apps/guacamole/guacamole.md && git commit -m "docs: add ESO and Guacamole operations documentation"`
