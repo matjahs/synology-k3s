@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: guacamole-db-init
+  namespace: tools
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: postgres:16-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-db-app
+                  key: password
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              HOST=keycloak-db-rw.keycloak.svc.cluster.local
+              if psql -h "$HOST" -U guacamole -d guacamole \
+                      -c "\dt guacamole_user" 2>/dev/null | grep -q guacamole_user; then
+                echo "Schema already initialized, skipping."
+                exit 0
+              fi
+              echo "Initializing Guacamole schema..."
+              psql -h "$HOST" -U guacamole -d guacamole -f /init/initdb.sql
+              echo "Done."
+          volumeMounts:
+            - name: initdb
+              mountPath: /init
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: initdb
+          configMap:
+            name: guacamole-initdb
