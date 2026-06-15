@@ -7,14 +7,14 @@ pull-availability risk after Bitnami moved its catalog to "Secure Images" /
 
 ## Components
 
-| Piece | Where | Notes |
-|---|---|---|
-| Keycloak Operator + CRDs | [`platform/keycloak-operator-app.yaml`](../../platform/keycloak-operator-app.yaml) | Upstream `keycloak-k8s-resources` pinned to `26.6.2`, into the `keycloak` ns (operator watches its own ns) |
-| CloudNativePG operator | [`platform/cloudnative-pg-app.yaml`](../../platform/cloudnative-pg-app.yaml) | Helm chart `0.28.2`, ns `cnpg-system`, cluster-wide |
-| Postgres `Cluster` | [`postgres-cluster.yaml`](postgres-cluster.yaml) | `keycloak-db`, 1 instance, 8Gi on `synology-iscsi` |
-| `Keycloak` CR | [`keycloak-cr.yaml`](keycloak-cr.yaml) | DB → `keycloak-db-rw:5432`, edge proxy (`xforwarded`), ingress disabled |
-| Gateway + HTTPRoutes | [`gateway.yaml`](gateway.yaml), [`httproute.yaml`](httproute.yaml) | TLS terminated at the Cilium Gateway; https → `keycloak-service:8080`, http → 301 https |
-| TLS cert (Let's Encrypt) | [`certificate.yaml`](certificate.yaml) | Issued by the cluster-wide `letsencrypt-prod` ClusterIssuer ([`platform/letsencrypt-clusterissuer.yaml`](../../platform/letsencrypt-clusterissuer.yaml)) via Cloudflare DNS-01; auto-renews |
+| Piece                    | Where                                                                              | Notes                                                                                                                                                                                       |
+| ------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Keycloak Operator + CRDs | [`platform/keycloak-operator-app.yaml`](../../platform/keycloak-operator-app.yaml) | Upstream `keycloak-k8s-resources` pinned to `26.6.2`, into the `keycloak` ns (operator watches its own ns)                                                                                  |
+| CloudNativePG operator   | [`platform/cloudnative-pg-app.yaml`](../../platform/cloudnative-pg-app.yaml)       | Helm chart `0.28.2`, ns `cnpg-system`, cluster-wide                                                                                                                                         |
+| Postgres `Cluster`       | [`postgres-cluster.yaml`](postgres-cluster.yaml)                                   | `keycloak-db`, 1 instance, 8Gi on `synology-iscsi`                                                                                                                                          |
+| `Keycloak` CR            | [`keycloak-cr.yaml`](keycloak-cr.yaml)                                             | DB → `keycloak-db-rw:5432`, edge proxy (`xforwarded`), ingress disabled                                                                                                                     |
+| Gateway + HTTPRoutes     | [`gateway.yaml`](gateway.yaml), [`httproute.yaml`](httproute.yaml)                 | TLS terminated at the Cilium Gateway; https → `keycloak-service:8080`, http → 301 https                                                                                                     |
+| TLS cert (Let's Encrypt) | [`certificate.yaml`](certificate.yaml)                                             | Issued by the cluster-wide `letsencrypt-prod` ClusterIssuer ([`platform/letsencrypt-clusterissuer.yaml`](../../platform/letsencrypt-clusterissuer.yaml)) via Cloudflare DNS-01; auto-renews |
 
 Sync order: both operators are sync-wave `-1`; the `keycloak` app (the CRs) is
 wave `1`. Argo CD self-heal converges if a CR is applied before its CRD exists.

@@ -13,17 +13,15 @@ Add Apache Guacamole to the cluster so users authenticated via Keycloak (`keyclo
 
 Three parallel tracks, applied in sync-wave order:
 
-| Track | What changes |
-|---|---|
-| **Platform** | Add ESO Helm app + ClusterSecretStore (Vault, k8s auth); add guacamole TLS listener to external-gateway; add guacamole cert |
-| **Keycloak migration** | Replace two out-of-band secrets with ExternalSecrets; extend CNPG cluster with guacamole DB + role |
-| **Guacamole app** | New `apps/guacamole/` with deployment, service, httproute, DB init job, KeycloakRealmImport, ExternalSecrets |
+| Track                  | What changes                                                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **Platform**           | Add ESO Helm app + ClusterSecretStore (Vault, k8s auth); add guacamole TLS listener to external-gateway; add guacamole cert |
+| **Keycloak migration** | Replace two out-of-band secrets with ExternalSecrets; extend CNPG cluster with guacamole DB + role                          |
+| **Guacamole app**      | New `apps/guacamole/` with deployment, service, httproute, DB init job, KeycloakRealmImport, ExternalSecrets                |
 
 ---
 
 ## Section 1: Platform — ESO + Vault
-
-### New files
 
 **`platform/external-secrets-app.yaml`** (sync-wave `-1`)
 ArgoCD Application deploying the `external-secrets` Helm chart into the `external-secrets` namespace. Wave `-1` ensures CRDs exist before platform kustomization resources apply.
@@ -51,18 +49,18 @@ spec:
 Documents the out-of-band Vault-side setup required once:
 
 ```bash
-# Enable kubernetes auth
+# Enable Kubernetes Auth
 vault auth enable kubernetes
 vault write auth/kubernetes/config \
-  kubernetes_host="https://<k3s-api>:6443" \
+  kubernetes_host="https://172.16.30.8:6443" \
   kubernetes_ca_cert=@/tmp/k3s-ca.crt
 
-# Policy: read all secrets
+# Policy: Read All Secrets
 vault policy write external-secrets - <<EOF
 path "secret/data/*" { capabilities = ["read"] }
 EOF
 
-# Bind ESO's ServiceAccount to the policy
+# Bind ESO's ServiceAccount to the Policy
 vault write auth/kubernetes/role/external-secrets \
   bound_service_account_names=external-secrets \
   bound_service_account_namespaces=external-secrets \
@@ -70,22 +68,23 @@ vault write auth/kubernetes/role/external-secrets \
   ttl=1h
 ```
 
-### Vault KV paths (KV v2, `secret/` engine)
+### Vault KV Paths
 
-| Path | Keys | Consumed by |
-|---|---|---|
-| `secret/data/keycloak/db` | `username`, `password` | CNPG bootstrap + Keycloak CR |
-| `secret/data/cert-manager/cloudflare` | `api-token` | cert-manager DNS-01 issuer |
-| `secret/data/guacamole/db` | `password` | CNPG managed role + guacamole pod |
-| `secret/data/guacamole/oidc` | `client-secret` | guacamole OIDC extension + KeycloakRealmImport |
+| Path                                  | Keys                   | Consumed by                                    |
+| ------------------------------------- | ---------------------- | ---------------------------------------------- |
+| `secret/data/keycloak/db`             | `username`, `password` | CNPG bootstrap + Keycloak CR                   |
+| `secret/data/cert-manager/cloudflare` | `api-token`            | cert-manager DNS-01 issuer                     |
+| `secret/data/guacamole/db`            | `password`             | CNPG managed role + guacamole pod              |
+| `secret/data/guacamole/oidc`          | `client-secret`        | guacamole OIDC extension + KeycloakRealmImport |
 
-### Kubernetes auth — how it works with external Vault
+### Kubernetes Auth — How It Works with External Vault
 
 Vault validates ServiceAccount JWTs by calling the k3s TokenReview API (`https://<k3s-api>:6443`). Since Vault and k3s share the same LAN, this works without extra tunnelling. The `kubernetes_ca_cert` tells Vault how to trust the k3s API TLS cert.
 
-### Gateway + TLS additions
+### Gateway + TLS Additions
 
 **`platform/argocd-ingress.yaml`** — add listener to `external-gateway`:
+
 ```yaml
 - name: https-guacamole
   protocol: HTTPS
@@ -103,6 +102,7 @@ Vault validates ServiceAccount JWTs by calling the k3s TokenReview API (`https:/
 ```
 
 **`platform/external-gateway-certs.yaml`** — add Certificate:
+
 ```yaml
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -128,15 +128,15 @@ spec:
 
 `ExternalSecret` in `keycloak` namespace. Reads `secret/data/keycloak/db` → produces `keycloak-db-app` Secret with type `kubernetes.io/basic-auth` and keys `username`/`password`. Shape is identical to the existing out-of-band Secret, so `postgres-cluster.yaml` and `keycloak-cr.yaml` need no changes.
 
-### `platform/cloudflare-external-secret.yaml` (added to `platform/kustomization.yaml`)
+### `platform/cloudflare-external-secret.yaml`
 
 `ExternalSecret` with `namespace: cert-manager`. Reads `secret/data/cert-manager/cloudflare` → produces `cloudflare-api-token` Secret. Lives in `platform/` because cert-manager has no `apps/` directory.
 
-### `.example.yaml` files
+### `.example.yaml` Files
 
 Both `keycloak-db-secret.example.yaml` and `cert-manager-cloudflare-secret.example.yaml` remain in git as reference but get their header comments updated: replace the "apply out-of-band" instructions with a pointer to the ExternalSecret that now manages this Secret.
 
-### `apps/keycloak/postgres-cluster.yaml` — CNPG managed databases
+### `apps/keycloak/postgres-cluster.yaml` — CNPG Managed Databases
 
 Add to the existing `Cluster` spec:
 
@@ -161,11 +161,11 @@ The `guacamole-db-creds` Secret (key `password`) is created by a separate Extern
 
 ## Section 3: Guacamole App
 
-### Directory structure
+### Directory Structure
 
 Resources that belong to the `keycloak` namespace live in `apps/keycloak/` (where Kustomize sets `namespace: keycloak`). Resources that belong to `tools` live in `apps/guacamole/`.
 
-```
+```plain
 apps/keycloak/
   external-secret-guacamole-db.yaml   # ExternalSecret → guacamole-db-creds (keycloak ns, for CNPG role)
   keycloak-realm-import.yaml          # KeycloakRealmImport CR (keycloak ns)
@@ -190,11 +190,11 @@ ArgoCD Application, sync-wave `2` (after Keycloak's wave `1`), destination names
 
 Three `ExternalSecret` resources:
 
-| Namespace | Vault path | Produces Secret | Consumed by |
-|---|---|---|---|
-| `keycloak` | `secret/data/guacamole/db` | `guacamole-db-creds` (key: `password`) | CNPG managed role |
-| `tools` | `secret/data/guacamole/db` | `guacamole-db-app` (key: `password`) | guacamole pod `POSTGRESQL_PASSWORD` |
-| `tools` | `secret/data/guacamole/oidc` | `guacamole-oidc-secret` (key: `client-secret`) | guacamole pod `OPENID_CLIENT_SECRET` + KeycloakRealmImport |
+| Namespace  | Vault path                   | Produces Secret                                | Consumed by                                                |
+| ---------- | ---------------------------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| `keycloak` | `secret/data/guacamole/db`   | `guacamole-db-creds` (key: `password`)         | CNPG managed role                                          |
+| `tools`    | `secret/data/guacamole/db`   | `guacamole-db-app` (key: `password`)           | guacamole pod `POSTGRESQL_PASSWORD`                        |
+| `tools`    | `secret/data/guacamole/oidc` | `guacamole-oidc-secret` (key: `client-secret`) | guacamole pod `OPENID_CLIENT_SECRET` + KeycloakRealmImport |
 
 ### `keycloak-realm-import.yaml`
 
@@ -212,14 +212,14 @@ Three `ExternalSecret` resources:
 
 Single Deployment in `tools` namespace, two containers:
 
-| Container | Image | Role |
-|---|---|---|
-| `guacd` | `guacamole/guacd:<ver>` | Remote desktop proxy, `localhost:4822` |
-| `guacamole` | `guacamole/guacamole:<ver>` | Web frontend, port `8080` |
+| Container   | Image                       | Role                                   |
+| ----------- | --------------------------- | -------------------------------------- |
+| `guacd`     | `guacamole/guacd:<ver>`     | Remote desktop proxy, `localhost:4822` |
+| `guacamole` | `guacamole/guacamole:<ver>` | Web frontend, port `8080`              |
 
 Key env vars on the `guacamole` container:
 
-```
+```shell
 GUACD_HOSTNAME=localhost
 GUACD_PORT=4822
 POSTGRESQL_HOSTNAME=keycloak-db-rw.keycloak.svc.cluster.local
@@ -240,11 +240,13 @@ Both containers use `securityContext` matching the existing cluster pattern (dro
 ### `initdb-configmap.yaml` + `db-init-job.yaml`
 
 **ConfigMap** holds the Guacamole PostgreSQL init SQL, captured during implementation:
+
 ```bash
 docker run --rm guacamole/guacamole:<ver> /opt/guacamole/bin/initdb.sh --postgresql
 ```
 
 **Job** (sync-wave `3`) uses `postgres:16-alpine`. Idempotent check before running:
+
 ```bash
 psql ... -c "\dt guacamole_user" | grep -q guacamole_user \
   && echo "schema exists, skipping" \
@@ -261,7 +263,7 @@ ClusterIP Service `guacamole-svc`, port `80` → pod port `8080`.
 
 Attaches to `external-gateway` in `kube-system`, hostname `guacamole.lab.mxe11.nl`, `sectionName: https-guacamole`, routes to `guacamole-svc:80`.
 
-### RDP connection setup (manual, post-deploy)
+### RDP Connection Setup
 
 After Guacamole is running, log into `https://guacamole.lab.mxe11.nl/guacamole/` as the Guacamole admin, navigate to **Settings → Connections**, and create an RDP connection:
 
@@ -271,22 +273,23 @@ After Guacamole is running, log into `https://guacamole.lab.mxe11.nl/guacamole/`
 
 ---
 
-## Sync-wave summary
+## Sync-Wave Summary
 
-| Wave | Resource |
-|---|---|
-| `-1` | `external-secrets-app.yaml` (ESO Helm app) |
-| `-1` | `keycloak-operator-app.yaml` (existing) |
-| `0` | `platform-app.yaml` (ClusterSecretStore, gateway certs, listeners) |
-| `1` | `keycloak-app.yaml` (Keycloak CR, ExternalSecrets, CNPG with guacamole DB) |
-| `2` | `guacamole-app.yaml` (Deployment, Service, HTTPRoute, KeycloakRealmImport) |
-| `3` | DB init Job (within guacamole app, annotated wave `3`) |
+| Wave | Resource                                                                   |
+| ---- | -------------------------------------------------------------------------- |
+| `-1` | `external-secrets-app.yaml` (ESO Helm app)                                 |
+| `-1` | `keycloak-operator-app.yaml` (existing)                                    |
+| `0`  | `platform-app.yaml` (ClusterSecretStore, gateway certs, listeners)         |
+| `1`  | `keycloak-app.yaml` (Keycloak CR, ExternalSecrets, CNPG with guacamole DB) |
+| `2`  | `guacamole-app.yaml` (Deployment, Service, HTTPRoute, KeycloakRealmImport) |
+| `3`  | DB init Job (within guacamole app, annotated wave `3`)                     |
 
 ---
 
-## Files changed / added
+## Files Changed / Added
 
-### New files
+### New Files
+
 - `platform/external-secrets-app.yaml`
 - `platform/vault-secret-store.yaml`
 - `platform/cloudflare-external-secret.yaml`
@@ -302,7 +305,8 @@ After Guacamole is running, log into `https://guacamole.lab.mxe11.nl/guacamole/`
 - `apps/guacamole/keycloak-realm-import.yaml`
 - `apps/guacamole/guacamole.md`
 
-### Modified files
+### Modified Files
+
 - `platform/kustomization.yaml` — add `vault-secret-store.yaml`, `cloudflare-external-secret.yaml`
 - `platform/argocd-ingress.yaml` — add `https-guacamole` listener
 - `platform/external-gateway-certs.yaml` — add `guacamole-tls` Certificate
@@ -314,7 +318,7 @@ After Guacamole is running, log into `https://guacamole.lab.mxe11.nl/guacamole/`
 
 ---
 
-## Out-of-band prerequisites (before first sync)
+## Out-Of-Band Prerequisites (Before First Sync)
 
 1. **Vault KV paths populated** — put the four secret paths in Vault before ArgoCD syncs
 2. **Vault kubernetes auth configured** — run the `vault auth enable` / `vault write` commands in `platform/external-secrets.md`
