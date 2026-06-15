@@ -1,0 +1,28 @@
+apiVersion: k8s.keycloak.org/v2beta1
+kind: KeycloakRealmImport
+metadata:
+  name: lab
+  namespace: keycloak
+spec:
+  keycloakCRName: keycloak
+  realm:
+    realm: lab
+    displayName: Lab
+    enabled: true
+    sslRequired: external
+    registrationAllowed: false
+    clients:
+      - clientId: guacamole
+        name: Guacamole
+        description: Apache Guacamole remote desktop gateway
+        protocol: openid-connect
+        enabled: true
+        publicClient: false
+        standardFlowEnabled: true
+        directAccessGrantsEnabled: false
+        redirectUris:
+          - "https://guacamole.lab.mxe11.nl/guacamole/*"
+        webOrigins:
+          - "https://guacamole.lab.mxe11.nl"
+        attributes:
+          post.logout.redirect.uris: "https://guacamole.lab.mxe11.nl/guacamole/*"
