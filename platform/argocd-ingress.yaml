@@ -30,6 +30,19 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: https-guacamole
+      protocol: HTTPS
+      port: 443
+      hostname: guacamole.lab.mxe11.nl
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: guacamole-tls
+            namespace: kube-system
+      allowedRoutes:
+        namespaces:
+          from: All
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

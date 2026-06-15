@@ -16,3 +16,18 @@ spec:
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: guacamole-tls
+  namespace: kube-system
+spec:
+  secretName: guacamole-tls
+  renewBefore: 720h
+  commonName: guacamole.lab.mxe11.nl
+  dnsNames:
+    - guacamole.lab.mxe11.nl
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
