@@ -1,4 +1,0 @@
-# ── docker.yaml ──────────────────────────────────────────────────────────────
-# Docker socket integration — not used in K3s mode.
-# Leave empty; file must exist or Homepage will log a warning.
-# ─────────────────────────────────────────────────────────────────────────────

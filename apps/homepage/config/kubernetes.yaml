@@ -1,8 +1,0 @@
-# ── kubernetes.yaml ──────────────────────────────────────────────────────────
-# Tells Homepage how to connect to Kubernetes for service discovery.
-# "cluster" mode uses the in-pod ServiceAccount token — works with K3s out of
-# the box as long as the RBAC in homepage.yaml has been applied.
-# Docs: https://gethomepage.dev/configs/kubernetes/
-# ─────────────────────────────────────────────────────────────────────────────
-
-mode: cluster

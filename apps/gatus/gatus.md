@@ -67,4 +67,3 @@ Each external endpoint has a `heartbeat`, so a stalled CronJob also alerts.
   health API.
 - SDDC token field names (`accessToken`, `.elements[].status`) are stable across
   VCF 9.x; confirm against the 9.1 build if a check misbehaves.
-- Optional: add Gatus to the Homepage dashboard (`apps/homepage/config/services.yaml`).
