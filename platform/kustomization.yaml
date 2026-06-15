@@ -10,3 +10,4 @@ resources:
   - l2-networking.yaml
   - letsencrypt-clusterissuer.yaml
   - external-gateway-certs.yaml
+  - vault-secret-store.yaml
