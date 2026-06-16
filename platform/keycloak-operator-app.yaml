@@ -16,10 +16,6 @@ spec:
     repoURL: https://github.com/keycloak/keycloak-k8s-resources.git
     targetRevision: "26.6.2"
     path: kubernetes
-    directory:
-      # The kubernetes/ dir is flat and contains exactly the two CRDs plus
-      # kubernetes.yml (operator Deployment + RBAC) — apply all of them.
-      recurse: false
   destination:
     server: https://kubernetes.default.svc
     # The operator watches the namespace it runs in, so the Keycloak CR lives
