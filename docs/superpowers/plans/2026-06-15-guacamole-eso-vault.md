@@ -169,7 +169,7 @@ spec:
 - [ ] Create `platform/vault-secret-store.yaml`:
 
 ```yaml
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ClusterSecretStore
 metadata:
   name: vault
@@ -212,7 +212,7 @@ resources:
 - [ ] Create `platform/cloudflare-external-secret.yaml`. Note the explicit `namespace: cert-manager` — the platform kustomization sets no global namespace, so this lands in cert-manager correctly:
 
 ```yaml
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: cloudflare-api-token
@@ -266,7 +266,7 @@ resources:
 - [ ] Create `apps/keycloak/external-secret-db.yaml`. The target Secret must be `kubernetes.io/basic-auth` with `username` and `password` keys — that's the exact shape both the CNPG Cluster and the Keycloak CR already expect:
 
 ```yaml
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: keycloak-db-app
@@ -331,7 +331,7 @@ resources:
 - [ ] Create `apps/keycloak/external-secret-guacamole-db.yaml`. This Secret lives in the `keycloak` namespace so CNPG can reference it as `passwordSecret`:
 
 ```yaml
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: guacamole-db-creds
@@ -561,7 +561,7 @@ Both ExternalSecrets land in `tools` namespace (inherited from `kustomization.ya
 - [ ] Create `apps/guacamole/external-secret.yaml`:
 
 ```yaml
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: guacamole-db-app
@@ -580,7 +580,7 @@ spec:
         key: guacamole/db
         property: password
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: guacamole-oidc-secret
