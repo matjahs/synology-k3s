@@ -19,6 +19,28 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: keycloak
+  ignoreDifferences:
+    - group: postgresql.cnpg.io
+      kind: Cluster
+      jqPathExpressions:
+        - .spec.affinity
+        - .spec.enablePDB
+        - .spec.enableSuperuserAccess
+        - .spec.failoverDelay
+        - .spec.logLevel
+        - .spec.maxSyncReplicas
+        - .spec.minSyncReplicas
+        - .spec.monitoring
+        - .spec.postgresGID
+        - .spec.postgresUID
+        - .spec.postgresql
+        - .spec.probes
+        - .spec.replicationSlots
+        - .spec.resources
+        - .spec.smartShutdownTimeout
+        - .spec.startDelay
+        - .spec.stopDelay
+        - .spec.switchoverDelay
   syncPolicy:
     automated:
       prune: true

@@ -4,15 +4,15 @@ Automatically publishes DNS records for `lab.mxe11.nl` to the UniFi gateway at
 `172.16.0.1`, derived from the Gateway API. Defined in
 [`external-dns-app.yaml`](external-dns-app.yaml).
 
-| | |
-|---|---|
-| Chart | `external-dns` `1.21.1` (app `0.21.0`, `https://kubernetes-sigs.github.io/external-dns/`) |
-| Provider | webhook sidecar `ghcr.io/kashalls/external-dns-unifi-webhook:v0.8.2` |
-| Namespace | `external-dns` |
-| Source | `gateway-httproute` |
-| Zone | `lab.mxe11.nl` |
-| Policy | `sync` (create + delete, TXT-owned) |
-| Owner ID | `lab-k3s` (TXT registry, prefix `k8s.`) |
+|           |                                                                                           |
+| --------- | ----------------------------------------------------------------------------------------- |
+| Chart     | `external-dns` `1.21.1` (app `0.21.0`, `https://kubernetes-sigs.github.io/external-dns/`) |
+| Provider  | webhook sidecar `ghcr.io/kashalls/external-dns-unifi-webhook:v0.8.2`                      |
+| Namespace | `external-dns`                                                                            |
+| Source    | `gateway-httproute`                                                                       |
+| Zone      | `lab.mxe11.nl`                                                                            |
+| Policy    | `sync` (create + delete, TXT-owned)                                                       |
+| Owner ID  | `lab-k3s` (TXT registry, prefix `k8s.`)                                                   |
 
 ## How it works
 
@@ -22,11 +22,11 @@ LB IP), and the webhook writes A + TXT records into UniFi's local DNS.
 
 Records it will manage today:
 
-| Host | Source HTTPRoute | Target |
-|---|---|---|
-| `keycloak.lab.mxe11.nl` | `apps/keycloak` (Gateway `keycloak`) | that Gateway's LB IP |
-| `cyberchef.lab.mxe11.nl` | `apps/cyberchef` (Gateway `external-gateway`) | external-gateway LB IP |
-| `argocd.lab.mxe11.nl` | `platform/argocd-ingress.yaml` (Gateway `external-gateway`) | external-gateway LB IP |
+| Host                     | Source HTTPRoute                                            | Target                 |
+| ------------------------ | ----------------------------------------------------------- | ---------------------- |
+| `keycloak.lab.mxe11.nl`  | `apps/keycloak` (Gateway `keycloak`)                        | that Gateway's LB IP   |
+| `cyberchef.lab.mxe11.nl` | `apps/cyberchef` (Gateway `external-gateway`)               | external-gateway LB IP |
+| `argocd.lab.mxe11.nl`    | `platform/argocd-ingress.yaml` (Gateway `external-gateway`) | external-gateway LB IP |
 
 ## One-time setup
 

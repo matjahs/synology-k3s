@@ -25,12 +25,12 @@ vault write auth/kubernetes/role/external-secrets \
 
 ## Vault KV Paths
 
-| Path | Keys | Produces Secret |
-|---|---|---|
-| `secret/data/keycloak/db` | `username`, `password` | `keycloak/keycloak-db-app` |
-| `secret/data/cert-manager/cloudflare` | `api-token` | `cert-manager/cloudflare-api-token` |
-| `secret/data/guacamole/db` | `password` | `keycloak/guacamole-db-creds`, `tools/guacamole-db-app` |
-| `secret/data/guacamole/oidc` | `client-secret` | `tools/guacamole-oidc-secret` |
+| Path                                  | Keys                   | Produces Secret                                         |
+| ------------------------------------- | ---------------------- | ------------------------------------------------------- |
+| `secret/data/keycloak/db`             | `username`, `password` | `keycloak/keycloak-db-app`                              |
+| `secret/data/cert-manager/cloudflare` | `api-token`            | `cert-manager/cloudflare-api-token`                     |
+| `secret/data/guacamole/db`            | `password`             | `keycloak/guacamole-db-creds`, `tools/guacamole-db-app` |
+| `secret/data/guacamole/oidc`          | `client-secret`        | `tools/guacamole-oidc-secret`                           |
 
 ## Populate Secrets (before first sync)
 

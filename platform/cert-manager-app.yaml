@@ -17,6 +17,11 @@ spec:
         # cert-manager >= v1.15 uses crds.enabled (older charts used installCRDs).
         crds:
           enabled: true
+        # Use public DNS for DNS-01 propagation checks so cert-manager bypasses
+        # the internal Infoblox NS (172.16.30.110) which is unreachable from pods.
+        extraArgs:
+          - --dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53
+          - --dns01-recursive-nameservers-only=true
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager

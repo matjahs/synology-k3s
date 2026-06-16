@@ -4,16 +4,16 @@ Cluster storage is provided by [democratic-csi](https://github.com/democratic-cs
 talking to the Synology NAS over the DSM API. It provisions an **iSCSI LUN**
 per PersistentVolume, mounted `ReadWriteOnce`, with online expansion support.
 
-| | |
-|---|---|
-| Driver | `org.democratic-csi.synology-iscsi` |
-| Chart | `democratic-csi` `0.15.1` (`https://democratic-csi.github.io/charts/`) |
-| Namespace | `democratic-csi` |
-| StorageClass | `synology-iscsi` (**cluster default**) |
-| Access mode | `ReadWriteOnce` (block) |
-| Expansion | enabled |
-| Snapshots | disabled (see below) |
-| Sync wave | `-1` (before stateful apps) |
+|              |                                                                        |
+| ------------ | ---------------------------------------------------------------------- |
+| Driver       | `org.democratic-csi.synology-iscsi`                                    |
+| Chart        | `democratic-csi` `0.15.1` (`https://democratic-csi.github.io/charts/`) |
+| Namespace    | `democratic-csi`                                                       |
+| StorageClass | `synology-iscsi` (**cluster default**)                                 |
+| Access mode  | `ReadWriteOnce` (block)                                                |
+| Expansion    | enabled                                                                |
+| Snapshots    | disabled (see below)                                                   |
+| Sync wave    | `-1` (before stateful apps)                                            |
 
 Defined in [`democratic-csi-app.yaml`](democratic-csi-app.yaml). All values are
 inlined there; the only secret material is the DSM connection, kept out of git.
