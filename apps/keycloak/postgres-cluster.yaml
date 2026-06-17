@@ -19,10 +19,6 @@ spec:
     storageClass: synology-iscsi
 
   managed:
-    databases:
-      - name: guacamole
-        ensure: present
-        owner: guacamole
     roles:
       - name: guacamole
         ensure: present

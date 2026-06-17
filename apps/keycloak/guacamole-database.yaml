@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: guacamole
+  namespace: keycloak
+spec:
+  cluster:
+    name: keycloak-db
+  name: guacamole
+  owner: guacamole
+  ensure: present

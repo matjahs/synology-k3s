@@ -12,6 +12,7 @@ resources:
   - gateway.yaml
   - httproute.yaml
   - postgres-cluster.yaml
+  - guacamole-database.yaml
   - keycloak-cr.yaml
   - external-secret-db.yaml
   - external-secret-guacamole-db.yaml
