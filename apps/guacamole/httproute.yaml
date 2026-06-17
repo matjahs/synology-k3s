@@ -13,6 +13,17 @@ spec:
   rules:
     - matches:
         - path:
+            type: Exact
+            value: /
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            path:
+              type: ReplaceFullPath
+              replaceFullPath: /guacamole/
+            statusCode: 301
+    - matches:
+        - path:
             type: PathPrefix
             value: /
       backendRefs:
