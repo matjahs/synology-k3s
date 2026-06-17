@@ -58,7 +58,7 @@ spec:
               value: keycloak-db-rw.keycloak.svc.cluster.local
             - name: POSTGRESQL_DATABASE
               value: guacamole
-            - name: POSTGRESQL_USERNAME
+            - name: POSTGRESQL_USER
               value: guacamole
             - name: POSTGRESQL_PASSWORD
               valueFrom:

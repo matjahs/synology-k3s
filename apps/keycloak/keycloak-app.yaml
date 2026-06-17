@@ -41,6 +41,9 @@ spec:
         - .spec.startDelay
         - .spec.stopDelay
         - .spec.switchoverDelay
+        - .spec.managed.databases
+        - .spec.managed.roles[].connectionLimit
+        - .spec.managed.roles[].inherit
   syncPolicy:
     automated:
       prune: true
