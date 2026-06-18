@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # --- CONFIGURATION VARIABLES ---
-NODE_IP="172.16.30.8"
+# NODE_IP="172.16.30.8"
 GATEWAY_API_VERSION="v1.1.0"
 
 echo "=== 1. Creating Declarative K3s Config ==="

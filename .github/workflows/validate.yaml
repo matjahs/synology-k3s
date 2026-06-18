@@ -45,7 +45,7 @@ jobs:
             | sudo tar -xz -C /usr/local/bin kubeconform
       - name: Validate Kustomize builds
         run: |
-          for d in platform apps/cyberchef apps/keycloak apps/guacamole; do
+          for d in platform apps/cyberchef apps/keycloak apps/guacamole apps/observability; do
             echo "::group::kustomize build $d"
             # -skip Cluster: datreeio CNPG schema predates spec.managed.databases (added 1.23)
             kustomize build "$d" | kubeconform -strict -summary -ignore-missing-schemas \
@@ -71,3 +71,13 @@ jobs:
           helm template cnpg cloudnative-pg \
             --repo https://cloudnative-pg.github.io/charts \
             --version 0.28.2 > /dev/null
+      - name: Render Splunk OTel Collector chart
+        run: |
+          helm template splunk-otel-collector splunk-otel-collector \
+            --repo https://signalfx.github.io/splunk-otel-collector-chart \
+            --version 0.154.0 \
+            --set secret.create=false \
+            --set clusterName=synology-k3s \
+            --set splunkObservability.realm=eu1 \
+            --set logsCollection.enabled=true \
+            --set gateway.enabled=false > /dev/null

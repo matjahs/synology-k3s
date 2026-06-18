@@ -1,0 +1,34 @@
+name: build-keycloak
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/keycloak/Dockerfile
+      - apps/keycloak/keycloak-theme-for-kc-22-to-25.jar
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/keycloak
+          push: true
+          tags: |
+            ghcr.io/matjahs/keycloak:26.6.2
+            ghcr.io/matjahs/keycloak:latest

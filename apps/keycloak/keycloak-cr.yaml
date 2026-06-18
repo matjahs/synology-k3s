@@ -6,6 +6,8 @@ metadata:
 spec:
   instances: 1
 
+  image: ghcr.io/matjahs/keycloak:26.6.2
+
   db:
     vendor: postgres
     # CloudNativePG read-write service for the keycloak-db Cluster.
