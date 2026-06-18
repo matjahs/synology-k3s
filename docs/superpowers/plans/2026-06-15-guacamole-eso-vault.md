@@ -10,43 +10,29 @@
 
 ---
 
-## Status — 2026-06-16 (verified against the live cluster)
+## Status — 2026-06-18 (verified against the live cluster)
 
-The GitOps/manifest side is essentially complete and deployed. Everything now hangs on **one** item: Vault Kubernetes auth returns `403 permission denied` at login, so no secrets can be pulled.
+**Guacamole is UP.** In-cluster `GET /guacamole/` returns HTTP 200, the pod is `2/2 Running`, ESO is flowing secrets, and the DB schema is correct. Both earlier blockers — Vault auth, then a malformed DB schema — are resolved.
 
 **Done (verified in-cluster):**
 
-- ESO deployed (`external-secrets` app `Synced/Healthy`); all manifests migrated off the now-removed `external-secrets.io/v1beta1` API to `v1` (the running ESO, image `v2.6.0`, only serves `v1`).
-- `ClusterSecretStore/vault` object created — but **not Ready** (see blocker).
+- ESO deployed (`external-secrets` app `Synced/Healthy`); all manifests migrated off the now-removed `external-secrets.io/v1beta1` API to `v1` (running ESO image `v2.6.0` serves only `v1`).
+- **Vault Kubernetes auth fixed** — `ClusterSecretStore/vault` is `Ready`; all 5 ExternalSecrets `SecretSynced`; secrets present in `tools`/`keycloak`/`cert-manager`.
 - Vault KV populated (Prereq 2): `secret/guacamole/db`, `secret/guacamole/oidc`, `secret/keycloak/db`, `secret/cert-manager/cloudflare`.
-- Guacamole app deployed: `ConfigMap/guacamole-initdb`, `Service/guacamole-svc`, `Deployment/guacamole`, `HTTPRoute/guacamole`, both ExternalSecrets — all `Synced`. Route `guacamole.lab.mxe11.nl` is live.
-- Side fix landed: removed `directory: recurse: false` from `keycloak-operator-app.yaml` (the boolean zero-value is dropped by the API on apply, causing a permanent phantom diff). `root-platform` and `keycloak-operator` are now green.
+- Guacamole deployed and serving: `Deployment/guacamole` `2/2`, `Service/guacamole-svc`, `HTTPRoute/guacamole`, `guacamole-db-init` Job `Complete`. Route `guacamole.lab.mxe11.nl` live.
+- **DB schema corrected (2026-06-18).** The original `initdb-configmap.yaml` held a malformed schema (enum columns as `varchar`, no `CREATE TYPE`), so auth queries casting to `'USER'::guacamole_entity_type` threw and the UI showed a generic error page. Regenerated the canonical schema from the running `guacamole/guacamole:1.5.5` image, wiped + reloaded the `guacamole` DB, and updated the ConfigMap. All 5 enum types present; `guacamole_entity.type` is the real `guacamole_entity_type`; `guacadmin` seeded.
+- Side fix landed: removed `directory: recurse: false` from `keycloak-operator-app.yaml` (zero-value boolean dropped on apply -> permanent phantom diff). `root-platform` and `keycloak-operator` green.
 
-**Blocker — Vault Kubernetes auth (Prereq 1):**
-
-```
-PUT https://vault.mxe11.nl/v1/auth/kubernetes/login  ->  403 permission denied
-```
-
-Reproduced with a freshly-minted `external-secrets` SA token, in both the root and the (stale) `admin` namespaces — identical 403. Cascade:
-
-- `ClusterSecretStore/vault` -> `InvalidProviderConfig`, `Ready=False`
-- All 5 ExternalSecrets -> `SecretSyncedError` ("ClusterSecretStore vault is not ready")
-- `tools` namespace has **no** secrets -> `guacamole` pod stuck `CreateContainerConfigError: secret "guacamole-db-app" not found`
-- `guacamole-db-init` Job never created (lone `OutOfSync` resource; app retrying)
-
-**Most likely root cause (verified from the k8s side):** Vault runs **outside** the cluster (`vault.mxe11.nl` -> `172.16.0.4`, self-hosted, non-Enterprise). The Prereq 1 `auth/kubernetes/config` command below sets **no `token_reviewer_jwt`**, so Vault uses the *client's own* SA token to call the Kubernetes `TokenReview` API. But the `external-secrets` SA is **not** bound to `system:auth-delegator` (`kubectl auth can-i create tokenreviews --as=system:serviceaccount:external-secrets:external-secrets` = **no**), so the TokenReview is forbidden -> login 403.
+**Resolved blocker — Vault Kubernetes auth (Prereq 1):** login returned `403 permission denied` because Vault runs **outside** the cluster (`vault.mxe11.nl` -> `172.16.0.4`, self-hosted, non-Enterprise) and `auth/kubernetes/config` set no `token_reviewer_jwt`, so Vault used the *client* SA token for the `TokenReview` call — which the `external-secrets` SA wasn't allowed to make. Fixed by granting that SA `system:auth-delegator` (Option A). Keep the External-Vault caveat under Prereq 1 in mind for any rebuild.
 
 **Remaining work:**
 
-- [ ] **Fix Vault k8s auth.** Inspecting the live `auth/kubernetes/config` + role needs a root/privileged Vault token (the current `userpass-admin` token is KV-scoped and 403s on `sys/auth`). Pick one fix:
-  - [ ] **Option A (simplest):** give the ESO SA TokenReview rights, then re-test. Prefer a GitOps manifest (ClusterRoleBinding `external-secrets` SA -> `system:auth-delegator`); quick test: `kubectl create clusterrolebinding external-secrets-auth-delegator --clusterrole=system:auth-delegator --serviceaccount=external-secrets:external-secrets`.
-  - [ ] **Option B:** set an explicit long-lived `token_reviewer_jwt` (+ CA + `kubernetes_host=https://172.16.30.8:6443`) on `auth/kubernetes/config`, sourced from a SA that *does* hold `system:auth-delegator`. Then the ESO SA needs no extra rights.
-- [ ] Confirm `kubernetes_host` is reachable from 172.16.0.4, the CA matches, and role `external-secrets` binds SA `external-secrets/external-secrets` with policy `external-secrets` (`path "secret/data/*" { read }`).
-- [ ] After auth works: `ClusterSecretStore/vault` -> `Ready`; all ExternalSecrets -> `SecretSynced`; secrets appear in `tools`/`keycloak`/`cert-manager`.
-- [ ] `guacamole-db-init` Job runs to `Complete`; `Deployment/guacamole` -> `1/1`.
+- [ ] Commit the corrected `apps/guacamole/initdb-configmap.yaml` so git matches the live DB. (The completed db-init Job won't re-run, so no reload risk.)
+- [ ] Change the default `guacadmin` / `guacadmin` password, then verify the Keycloak OIDC login button end-to-end.
+- [x] Hardened the `guacamole-db-init` guard to gate on the `guacamole_entity_type` enum + `ON_ERROR_STOP=1` (in git, pending commit) — a future partial/wrong load now fails loudly instead of silently "completing".
+- [ ] Make the Vault auth fix durable in GitOps — add the `system:auth-delegator` ClusterRoleBinding for the `external-secrets` SA as a manifest (or set a `token_reviewer_jwt` on Vault) so a cluster rebuild doesn't reintroduce the 403.
 - [ ] Run the Post-Sync Checklist (bottom of this doc).
-- [ ] Housekeeping: drop the stale `VAULT_NAMESPACE=admin` (and dead HCP `VAULT_ADDR`) from the shell rc — this Vault is self-hosted and non-Enterprise, so `admin/` doesn't exist and silently 403s admin reads.
+- [ ] Housekeeping: drop the stale `VAULT_NAMESPACE=admin` (and dead HCP `VAULT_ADDR`) from the shell rc — this Vault is self-hosted, non-Enterprise, so `admin/` doesn't exist and silently 403s admin reads.
 
 ---
 
@@ -54,7 +40,7 @@ Reproduced with a freshly-minted `external-secrets` SA token, in both the root a
 
 These steps are out-of-band and must be done before ArgoCD syncs, or ExternalSecrets will stay `SecretSyncedError` until they do.
 
-**1. Vault Kubernetes auth (one-time setup): NOT WORKING as of 2026-06-16 — login returns 403. See the Status section above for the verified root cause and the two fix options.**
+**1. Vault Kubernetes auth (one-time setup): RESOLVED 2026-06-18 — login works after granting the `external-secrets` SA `system:auth-delegator`. See the Status section for details; keep the External-Vault caveat below in mind for any rebuild.**
 
 > **External-Vault caveat:** this Vault runs at `172.16.0.4`, outside the cluster. The `config` write below omits `token_reviewer_jwt`, so Vault uses the *client* SA token for TokenReview — which requires the `external-secrets` SA to hold `system:auth-delegator`. Either bind that role to the SA, or add `token_reviewer_jwt=@/tmp/reviewer.jwt` (from an auth-delegator SA) to the `config` command.
 

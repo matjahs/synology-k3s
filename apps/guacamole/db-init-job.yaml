@@ -25,13 +25,17 @@ spec:
             - |
               set -e
               HOST=keycloak-db-rw.keycloak.svc.cluster.local
-              if psql -h "$HOST" -U guacamole -d guacamole \
-                      -c "\dt guacamole_user" 2>/dev/null | grep -q guacamole_user; then
-                echo "Schema already initialized, skipping."
+              # Gate on a schema-defining ENUM type, not just a table: a table can
+              # exist from a partial/wrong load while the enum types the Guacamole
+              # JDBC layer casts to ('USER'::guacamole_entity_type) are missing
+              # — that exact gap silently shipped a broken schema on 2026-06-18.
+              if [ "$(psql -h "$HOST" -U guacamole -d guacamole -tAc \
+                      "SELECT 1 FROM pg_type WHERE typname='guacamole_entity_type'" 2>/dev/null)" = "1" ]; then
+                echo "Schema already initialized (guacamole_entity_type present), skipping."
                 exit 0
               fi
               echo "Initializing Guacamole schema..."
-              psql -h "$HOST" -U guacamole -d guacamole -f /init/initdb.sql
+              psql -h "$HOST" -U guacamole -d guacamole -v ON_ERROR_STOP=1 -f /init/initdb.sql
               echo "Done."
           volumeMounts:
             - name: initdb
