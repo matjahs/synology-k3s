@@ -79,5 +79,4 @@ jobs:
             --set secret.create=false \
             --set clusterName=synology-k3s \
             --set splunkObservability.realm=eu1 \
-            --set logsCollection.enabled=true \
             --set gateway.enabled=false > /dev/null
