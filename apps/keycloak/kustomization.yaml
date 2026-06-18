@@ -16,4 +16,4 @@ resources:
   - keycloak-cr.yaml
   - external-secret-db.yaml
   - external-secret-guacamole-db.yaml
-  - keycloak-realm-import.yaml
+  - keycloak-realm-import-vcf.yaml

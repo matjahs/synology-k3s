@@ -1,13 +1,18 @@
 apiVersion: k8s.keycloak.org/v2beta1
 kind: KeycloakRealmImport
 metadata:
-  name: lab
+  name: vcf
   namespace: keycloak
 spec:
   keycloakCRName: keycloak
+  # NOTE: KeycloakRealmImport is create-once — the operator will NOT overwrite
+  # the vcf realm if it already exists (it was created live by moving the
+  # guacamole client out of the lab realm on 2026-06-18). This manifest exists
+  # so a rebuild reproduces the realm + client. Manage ongoing changes in the
+  # Keycloak console / admin API, then mirror them back here.
   realm:
-    realm: lab
-    displayName: Lab
+    realm: vcf
+    displayName: VCF
     enabled: true
     sslRequired: external
     registrationAllowed: false
@@ -18,7 +23,11 @@ spec:
         protocol: openid-connect
         enabled: true
         publicClient: false
+        # Guacamole's OpenID extension uses the IMPLICIT flow
+        # (response_type=id_token, validated via JWKS). Implicit MUST be enabled
+        # or Keycloak returns "unauthorized_client / Implicit flow is disabled".
         standardFlowEnabled: true
+        implicitFlowEnabled: true
         directAccessGrantsEnabled: false
         redirectUris:
           - "https://guacamole.lab.mxe11.nl/guacamole/*"

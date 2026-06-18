@@ -66,11 +66,11 @@ spec:
                   name: guacamole-db-app
                   key: password
             - name: OPENID_AUTHORIZATION_ENDPOINT
-              value: https://keycloak.lab.mxe11.nl/realms/lab/protocol/openid-connect/auth
+              value: https://keycloak.lab.mxe11.nl/realms/vcf/protocol/openid-connect/auth
             - name: OPENID_JWKS_ENDPOINT
-              value: https://keycloak.lab.mxe11.nl/realms/lab/protocol/openid-connect/certs
+              value: https://keycloak.lab.mxe11.nl/realms/vcf/protocol/openid-connect/certs
             - name: OPENID_ISSUER
-              value: https://keycloak.lab.mxe11.nl/realms/lab
+              value: https://keycloak.lab.mxe11.nl/realms/vcf
             - name: OPENID_CLIENT_ID
               value: guacamole
             - name: OPENID_CLIENT_SECRET

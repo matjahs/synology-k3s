@@ -105,7 +105,7 @@ platform/
 apps/keycloak/
   external-secret-db.yaml            CREATE  ExternalSecret → keycloak-db-app in keycloak ns
   external-secret-guacamole-db.yaml  CREATE  ExternalSecret → guacamole-db-creds in keycloak ns
-  keycloak-realm-import.yaml         CREATE  KeycloakRealmImport for lab realm + guacamole client
+  keycloak-realm-import-vcf.yaml         CREATE  KeycloakRealmImport for vcf realm + guacamole client
   postgres-cluster.yaml              MODIFY  add spec.managed.databases + spec.managed.roles
   kustomization.yaml                 MODIFY  add three new resources
   keycloak-db-secret.example.yaml    MODIFY  update comment to point at ExternalSecret
@@ -421,25 +421,25 @@ resources:
 
 ## Task 6: KeycloakRealmImport
 
-**Files:** Create `apps/keycloak/keycloak-realm-import.yaml`, modify `apps/keycloak/kustomization.yaml`
+**Files:** Create `apps/keycloak/keycloak-realm-import-vcf.yaml`, modify `apps/keycloak/kustomization.yaml`
 
-The `KeycloakRealmImport` CR creates a `lab` realm and a confidential OIDC client. It does **not** specify the client secret — Keycloak generates one on first import. After sync, retrieve the generated secret and store it in Vault (see Task 12).
+The `KeycloakRealmImport` CR creates a `vcf` realm and a confidential OIDC client. It does **not** specify the client secret — Keycloak generates one on first import. After sync, retrieve the generated secret and store it in Vault (see Task 12).
 
-> If a `lab` realm already exists in Keycloak, the operator will log a conflict and skip the import. In that case, create the `guacamole` client manually in the Keycloak admin console with redirect URI `https://guacamole.lab.mxe11.nl/guacamole/*`, copy its secret to Vault, then delete this CR (or leave it — the operator won't re-import).
+> If a `vcf` realm already exists in Keycloak, the operator will log a conflict and skip the import. In that case, create the `guacamole` client manually in the Keycloak admin console with redirect URI `https://guacamole.lab.mxe11.nl/guacamole/*`, copy its secret to Vault, then delete this CR (or leave it — the operator won't re-import). **Important:** enable *Implicit flow* on the `guacamole` client — Guacamole's OpenID extension uses the implicit flow (`response_type=id_token`); without it Keycloak returns `unauthorized_client / Implicit flow is disabled`.
 
-- [ ] Create `apps/keycloak/keycloak-realm-import.yaml`:
+- [ ] Create `apps/keycloak/keycloak-realm-import-vcf.yaml`:
 
 ```yaml
 apiVersion: k8s.keycloak.org/v2beta1
 kind: KeycloakRealmImport
 metadata:
-  name: lab
+  name: vcf
   namespace: keycloak
 spec:
   keycloakCRName: keycloak
   realm:
-    realm: lab
-    displayName: Lab
+    realm: vcf
+    displayName: VCF
     enabled: true
     sslRequired: external
     registrationAllowed: false
@@ -451,6 +451,7 @@ spec:
         enabled: true
         publicClient: false
         standardFlowEnabled: true
+        implicitFlowEnabled: true
         directAccessGrantsEnabled: false
         redirectUris:
           - "https://guacamole.lab.mxe11.nl/guacamole/*"
@@ -471,12 +472,12 @@ resources:
   - keycloak-cr.yaml
   - external-secret-db.yaml
   - external-secret-guacamole-db.yaml
-  - keycloak-realm-import.yaml
+  - keycloak-realm-import-vcf.yaml
 ```
 
 - [ ] Validate: `kustomize build apps/keycloak | kubeconform -strict -summary -ignore-missing-schemas -schema-location default -schema-location "$CRD_SCHEMA"`
 
-- [ ] Commit: `git add apps/keycloak/keycloak-realm-import.yaml apps/keycloak/kustomization.yaml && git commit -m "feat(keycloak): add lab realm + guacamole OIDC client via KeycloakRealmImport"`
+- [ ] Commit: `git add apps/keycloak/keycloak-realm-import-vcf.yaml apps/keycloak/kustomization.yaml && git commit -m "feat(keycloak): add vcf realm + guacamole OIDC client via KeycloakRealmImport"`
 
 ---
 
@@ -717,11 +718,11 @@ spec:
                   name: guacamole-db-app
                   key: password
             - name: OPENID_AUTHORIZATION_ENDPOINT
-              value: https://keycloak.lab.mxe11.nl/realms/lab/protocol/openid-connect/auth
+              value: https://keycloak.lab.mxe11.nl/realms/vcf/protocol/openid-connect/auth
             - name: OPENID_JWKS_ENDPOINT
-              value: https://keycloak.lab.mxe11.nl/realms/lab/protocol/openid-connect/certs
+              value: https://keycloak.lab.mxe11.nl/realms/vcf/protocol/openid-connect/certs
             - name: OPENID_ISSUER
-              value: https://keycloak.lab.mxe11.nl/realms/lab
+              value: https://keycloak.lab.mxe11.nl/realms/vcf
             - name: OPENID_CLIENT_ID
               value: guacamole
             - name: OPENID_CLIENT_SECRET
@@ -912,7 +913,7 @@ This task runs **after** the first ArgoCD sync, once the `KeycloakRealmImport` h
 - [ ] Verify the realm import succeeded:
 
 ```bash
-kubectl get keycloakrealmimport -n keycloak lab
+kubectl get keycloakrealmimport -n keycloak vcf
 # STATUS should be Done
 ```
 
@@ -923,7 +924,7 @@ kubectl get secret keycloak-initial-admin -n keycloak \
   -o jsonpath='{.data.password}' | base64 -d; echo
 ```
 
-Navigate to: **Lab realm → Clients → guacamole → Credentials tab → Client secret**. Copy the value.
+Navigate to: **VCF realm → Clients → guacamole → Credentials tab → Client secret**. Copy the value.
 
 - [ ] Store it in Vault:
 
@@ -1033,7 +1034,7 @@ Apache Guacamole provides HTML5 browser-based access to RDP/SSH/VNC targets.
 
 | Piece | Notes |
 |---|---|
-| `guacamole` container | Tomcat webapp, port 8080, OIDC via Keycloak `lab` realm |
+| `guacamole` container | Tomcat webapp, port 8080, OIDC via Keycloak `vcf` realm |
 | `guacd` sidecar | Remote desktop proxy, `localhost:4822` |
 | `guacamole-svc` | ClusterIP, port 80 → 8080 |
 | `guacamole` HTTPRoute | TLS-terminated at `external-gateway` https-guacamole listener |
