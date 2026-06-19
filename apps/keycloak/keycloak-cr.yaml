@@ -6,7 +6,7 @@ metadata:
 spec:
   instances: 1
 
-  image: ghcr.io/matjahs/keycloak:26.6.2
+  image: ghcr.io/matjahs/keycloak:26.6.2-5a9fed2
 
   db:
     vendor: postgres
