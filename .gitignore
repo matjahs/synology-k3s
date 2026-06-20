@@ -40,3 +40,4 @@ cert-manager-cloudflare-secret.yaml
 
 # Kubernetes local render/output artifacts
 *.retry
+.cursor/

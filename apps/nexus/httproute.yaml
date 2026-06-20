@@ -1,0 +1,39 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nexus
+  namespace: tools
+spec:
+  parentRefs:
+    - name: external-gateway
+      namespace: kube-system
+      sectionName: https-nexus
+  hostnames:
+    - nexus.lab.mxe11.nl
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: nexus-svc
+          port: 8081
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nexus-redirect
+  namespace: tools
+spec:
+  parentRefs:
+    - name: external-gateway
+      namespace: kube-system
+      sectionName: http
+  hostnames:
+    - nexus.lab.mxe11.nl
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
