@@ -92,6 +92,39 @@ curl -sI https://nexus.lab.mxe11.nl/v2/ | grep -i 'docker-distribution\|www-auth
 After a successful login, `~/.docker/config.json` should contain an entry for
 `nexus.lab.mxe11.nl`.
 
+### Troubleshooting `access to the requested resource is not authorized` on push
+
+Login can succeed while push still fails if the account lacks **write** privileges
+on the docker hosted repository.
+
+1. **Confirm you are logged in as a push-capable user**
+   ```sh
+   docker logout nexus.lab.mxe11.nl
+   docker login nexus.lab.mxe11.nl -u admin
+   ```
+   Use `admin` (or a dedicated deploy user) — not a read-only or GitHub token.
+
+2. **Grant push privileges in Nexus** — Administration → Security → Roles
+   (or edit the user’s roles). The account needs **admin** on the docker repo,
+   not just view/read:
+   - `nx-repository-admin-docker-backstage-add`
+   - `nx-repository-admin-docker-backstage-edit`
+   - `nx-repository-view-docker-backstage-read`
+
+   The built-in `nx-admin` role includes these. A custom role with only
+   `nx-repository-view-docker-backstage-*` allows pull but **not** push.
+
+3. **Verify repository type** — `backstage` must be **docker (hosted)**, not proxy.
+
+4. **Re-login after permission changes** — Nexus issues a new bearer token on
+   login; old tokens do not pick up new roles.
+
+5. **Check the image path** — repo name is the first path segment:
+   ```sh
+   docker push nexus.lab.mxe11.nl/backstage/<image-name>:<tag>
+   # e.g. nexus.lab.mxe11.nl/backstage/backstage:latest
+   ```
+
 ## Notes
 
 - Single replica with `Recreate` strategy and a 50Gi RWO PVC on `synology-iscsi`.

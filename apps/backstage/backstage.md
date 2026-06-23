@@ -59,6 +59,11 @@ Auth provider (guest, Keycloak OIDC, etc.) is your choice in the external repo.
 ### CI in external repo
 
 - Build with the standard Backstage `Dockerfile` / `yarn build-image`.
+- **Build for `linux/amd64`** — the k3s node is x86_64; images built on Apple Silicon
+  default to arm64 and fail with `no match for platform in manifest`:
+  ```sh
+  docker buildx build --platform linux/amd64 -t nexus.lab.mxe11.nl/backstage/backstage:1.0.0 --push .
+  ```
 - Push to `nexus.lab.mxe11.nl/backstage/backstage:<tag>`.
 - Use GitHub Actions secrets `NEXUS_USERNAME` / `NEXUS_PASSWORD` for
   `docker login nexus.lab.mxe11.nl` — these must be **Nexus** credentials
