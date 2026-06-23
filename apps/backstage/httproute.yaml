@@ -1,44 +1,36 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: nexus
-  namespace: tools
+  name: backstage
+  namespace: backstage
 spec:
   parentRefs:
     - name: external-gateway
       namespace: kube-system
-      sectionName: https-nexus
+      sectionName: https-backstage
   hostnames:
-    - nexus.lab.mxe11.nl
+    - backstage.lab.mxe11.nl
   rules:
     - matches:
         - path:
             type: PathPrefix
             value: /
-      filters:
-        # Nexus Docker registry auth and blob redirects need the original
-        # scheme when TLS is terminated at the gateway (not at Nexus).
-        - type: RequestHeaderModifier
-          requestHeaderModifier:
-            set:
-              - name: X-Forwarded-Proto
-                value: https
       backendRefs:
-        - name: nexus-svc
-          port: 8081
+        - name: backstage
+          port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: nexus-redirect
-  namespace: tools
+  name: backstage-redirect
+  namespace: backstage
 spec:
   parentRefs:
     - name: external-gateway
       namespace: kube-system
       sectionName: http
   hostnames:
-    - nexus.lab.mxe11.nl
+    - backstage.lab.mxe11.nl
   rules:
     - filters:
         - type: RequestRedirect

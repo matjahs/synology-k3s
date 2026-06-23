@@ -56,6 +56,19 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: https-backstage
+      protocol: HTTPS
+      port: 443
+      hostname: backstage.lab.mxe11.nl
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: backstage-tls
+            namespace: kube-system
+      allowedRoutes:
+        namespaces:
+          from: All
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

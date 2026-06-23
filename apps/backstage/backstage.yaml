@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backstage
+  namespace: backstage
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: backstage
+  template:
+    metadata:
+      labels:
+        app: backstage
+    spec:
+      imagePullSecrets:
+        - name: nexus-docker-creds
+      containers:
+        - name: backstage
+          image: nexus.lab.mxe11.nl/backstage/backstage:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 7007
+          env:
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+            - secretRef:
+                name: backstage-secrets
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /healthcheck
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /healthcheck
