@@ -40,11 +40,21 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
+          startupProbe:
+            httpGet:
+              port: http
+              path: /.backstage/health/v1/liveness
+            failureThreshold: 30
+            periodSeconds: 10
           readinessProbe:
             httpGet:
               port: http
-              path: /healthcheck
+              path: /.backstage/health/v1/readiness
+            periodSeconds: 10
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               port: http
-              path: /healthcheck
+              path: /.backstage/health/v1/liveness
+            periodSeconds: 10
+            failureThreshold: 3
