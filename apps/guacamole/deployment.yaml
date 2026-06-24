@@ -73,11 +73,6 @@ spec:
               value: https://keycloak.lab.mxe11.nl/realms/vcf
             - name: OPENID_CLIENT_ID
               value: guacamole
-            - name: OPENID_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: guacamole-oidc-secret
-                  key: client-secret
             - name: OPENID_REDIRECT_URI
               value: https://guacamole.lab.mxe11.nl/guacamole/
             - name: OPENID_USERNAME_CLAIM_TYPE

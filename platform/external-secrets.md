@@ -30,7 +30,6 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/keycloak/db`             | `username`, `password` | `keycloak/keycloak-db-app`                              |
 | `secret/data/cert-manager/cloudflare` | `api-token`            | `cert-manager/cloudflare-api-token`                     |
 | `secret/data/guacamole/db`            | `password`             | `keycloak/guacamole-db-creds`, `tools/guacamole-db-app` |
-| `secret/data/guacamole/oidc`          | `client-secret`        | `tools/guacamole-oidc-secret`                           |
 | `secret/data/backstage/db`            | `username`, `password` | `backstage/postgres-secrets`                            |
 | `secret/data/backstage/github`        | `token`                | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/nexus-docker`  | `username`, `password` | `backstage/nexus-docker-creds`                          |
@@ -50,10 +49,6 @@ vault kv put secret/cert-manager/cloudflare \
 
 vault kv put secret/guacamole/db \
   password=<strong-password>
-
-# Populated after KeycloakRealmImport creates the guacamole client — see apps/guacamole/guacamole.md
-vault kv put secret/guacamole/oidc \
-  client-secret=<retrieved-from-keycloak>
 
 vault kv put secret/backstage/db \
   username=backstage \

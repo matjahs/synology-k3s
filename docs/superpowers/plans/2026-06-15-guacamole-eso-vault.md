@@ -587,7 +587,7 @@ resources:
 
 **Files:** Create `apps/guacamole/external-secret.yaml`
 
-Both ExternalSecrets land in `tools` namespace (inherited from `kustomization.yaml`). One creates the DB password Secret, the other the OIDC client secret.
+The ExternalSecret lands in `tools` namespace (inherited from `kustomization.yaml`) and creates the DB password Secret. Guacamole's OIDC uses the implicit flow (no client secret), so no OIDC ExternalSecret is needed.
 
 - [ ] Create `apps/guacamole/external-secret.yaml`:
 
@@ -610,25 +610,6 @@ spec:
       remoteRef:
         key: guacamole/db
         property: password
----
-apiVersion: external-secrets.io/v1
-kind: ExternalSecret
-metadata:
-  name: guacamole-oidc-secret
-  namespace: tools
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: vault
-    kind: ClusterSecretStore
-  target:
-    name: guacamole-oidc-secret
-    creationPolicy: Owner
-  data:
-    - secretKey: client-secret
-      remoteRef:
-        key: guacamole/oidc
-        property: client-secret
 ```
 
 - [ ] Validate: `kustomize build apps/guacamole | kubeconform -strict -summary -ignore-missing-schemas -schema-location default -schema-location "$CRD_SCHEMA"`
@@ -725,11 +706,6 @@ spec:
               value: https://keycloak.lab.mxe11.nl/realms/vcf
             - name: OPENID_CLIENT_ID
               value: guacamole
-            - name: OPENID_CLIENT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: guacamole-oidc-secret
-                  key: client-secret
             - name: OPENID_REDIRECT_URI
               value: https://guacamole.lab.mxe11.nl/guacamole/
             - name: OPENID_USERNAME_CLAIM_TYPE
@@ -906,39 +882,9 @@ spec:
 
 ---
 
-## Task 13: Retrieve OIDC Client Secret and Store in Vault
+## Task 13: OIDC Client Secret — not applicable (implicit flow)
 
-This task runs **after** the first ArgoCD sync, once the `KeycloakRealmImport` has been reconciled.
-
-- [ ] Verify the realm import succeeded:
-
-```bash
-kubectl get keycloakrealmimport -n keycloak vcf
-# STATUS should be Done
-```
-
-- [ ] Retrieve the auto-generated client secret. Log into <https://keycloak.lab.mxe11.nl> with the initial admin credentials:
-
-```bash
-kubectl get secret keycloak-initial-admin -n keycloak \
-  -o jsonpath='{.data.password}' | base64 -d; echo
-```
-
-Navigate to: **VCF realm → Clients → guacamole → Credentials tab → Client secret**. Copy the value.
-
-- [ ] Store it in Vault:
-
-```bash
-vault kv put secret/guacamole/oidc client-secret=<value-from-keycloak>
-```
-
-- [ ] ESO will sync within 1h (or trigger immediately):
-
-```bash
-kubectl annotate externalsecret -n tools guacamole-oidc-secret \
-  force-sync=$(date +%s) --overwrite
-kubectl get secret -n tools guacamole-oidc-secret   # should exist
-```
+> **Obsolete (2026-06-18).** Guacamole's OpenID extension uses the **implicit flow** (`response_type=id_token`, validated via JWKS) and does **not** use a client secret — there is nothing to retrieve or store. The `guacamole-oidc-secret` ExternalSecret and the `OPENID_CLIENT_SECRET` env were removed (Tasks 9–10); the Vault path `secret/guacamole/oidc` is unused and may be deleted. Just ensure the `guacamole` client in the **vcf** realm has *Implicit flow* enabled and redirect URI `https://guacamole.lab.mxe11.nl/guacamole/*` registered.
 
 ---
 
