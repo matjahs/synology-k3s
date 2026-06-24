@@ -7,6 +7,7 @@ resources:
   - postgres-storage.yaml
   - postgres.yaml
   - postgres-service.yaml
+  - kubernetes-rbac.yaml
   - backstage.yaml
   - backstage-service.yaml
   - httproute.yaml
