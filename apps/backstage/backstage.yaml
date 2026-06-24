@@ -18,7 +18,7 @@ spec:
         - name: nexus-docker-creds
       containers:
         - name: backstage
-          image: nexus.lab.mxe11.nl/backstage/backstage:1.0.0
+          image: nexus.lab.mxe11.nl/backstage/backstage:1.1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -28,6 +28,13 @@ spec:
               value: postgres
             - name: POSTGRES_PORT
               value: "5432"
+            - name: AUTH_KEYCLOAK_CLIENT_ID
+              value: "backstage"
+            - name: AUTH_KEYCLOAK_CLIENT_SECRET
+              value: "9bcVoOlPUbVUA8ddsXI9QRY8ekJmbkxf"
+            - name: KEYCLOAK_ISSUER_URL
+              value: "https://keycloak.lab.mxe11.nl/realms/master/.well-known/openid-configuration"
+
           envFrom:
             - secretRef:
                 name: postgres-secrets

@@ -41,3 +41,6 @@ cert-manager-cloudflare-secret.yaml
 # Kubernetes local render/output artifacts
 *.retry
 .cursor/
+
+# Added by ggshield
+.cache_ggshield
