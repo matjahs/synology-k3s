@@ -10,3 +10,5 @@ resources:
   - httproute.yaml
   - initdb-configmap.yaml
   - db-init-job.yaml
+  - connections-configmap.yaml
+  - connections-seed-job.yaml

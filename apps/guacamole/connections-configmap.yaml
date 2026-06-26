@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: guacamole-connections
+  namespace: tools
+data:
+  connections.sql: |
+    -- Declarative Guacamole connections for the homelab.
+    -- Applied idempotently by guacamole-connections-seed (PostSync hook).
+    -- RDP/SSH credentials are NOT stored here — users enter them at connect time.
+
+    -- corp-ca01 — corporate CA / Windows jump host (design target)
+    INSERT INTO guacamole_connection (connection_name, protocol)
+    SELECT 'corp-ca01', 'rdp'
+    WHERE NOT EXISTS (
+      SELECT 1 FROM guacamole_connection
+      WHERE connection_name = 'corp-ca01' AND parent_id IS NULL
+    );
+
+    INSERT INTO guacamole_connection_parameter (connection_id, parameter_name, parameter_value)
+    SELECT c.connection_id, p.name, p.value
+    FROM guacamole_connection c
+    CROSS JOIN (VALUES
+      ('hostname',    'corp-ca01.lab.mxe11.nl'),
+      ('port',        '3389'),
+      ('security',    'nla'),
+      ('ignore-cert', 'true')
+    ) AS p(name, value)
+    WHERE c.connection_name = 'corp-ca01' AND c.parent_id IS NULL
+    ON CONFLICT (connection_id, parameter_name)
+      DO UPDATE SET parameter_value = EXCLUDED.parameter_value;
+
+    -- esx — physical ESXi host shell
+    INSERT INTO guacamole_connection (connection_name, protocol)
+    SELECT 'esx', 'ssh'
+    WHERE NOT EXISTS (
+      SELECT 1 FROM guacamole_connection
+      WHERE connection_name = 'esx' AND parent_id IS NULL
+    );
+
+    INSERT INTO guacamole_connection_parameter (connection_id, parameter_name, parameter_value)
+    SELECT c.connection_id, p.name, p.value
+    FROM guacamole_connection c
+    CROSS JOIN (VALUES
+      ('hostname', 'esx.lab.mxe11.nl'),
+      ('port',     '22')
+    ) AS p(name, value)
+    WHERE c.connection_name = 'esx' AND c.parent_id IS NULL
+    ON CONFLICT (connection_id, parameter_name)
+      DO UPDATE SET parameter_value = EXCLUDED.parameter_value;
+
+    -- Grant READ on every connection to the homelab user group.
+    -- Keycloak users in group "homelab" (groups claim in the id_token) are
+    -- auto-added to this Guacamole group on login via OPENID_GROUPS_CLAIM_TYPE.
+    INSERT INTO guacamole_entity (name, type)
+    SELECT 'homelab', 'USER_GROUP'::guacamole_entity_type
+    WHERE NOT EXISTS (
+      SELECT 1 FROM guacamole_entity WHERE name = 'homelab' AND type = 'USER_GROUP'
+    );
+
+    INSERT INTO guacamole_user_group (entity_id)
+    SELECT entity_id
+    FROM guacamole_entity
+    WHERE name = 'homelab' AND type = 'USER_GROUP'
+    ON CONFLICT DO NOTHING;
+
+    INSERT INTO guacamole_connection_permission (entity_id, connection_id, permission)
+    SELECT g.entity_id, c.connection_id, 'READ'::guacamole_object_permission_type
+    FROM guacamole_entity g
+    CROSS JOIN guacamole_connection c
+    WHERE g.name = 'homelab' AND g.type = 'USER_GROUP'
+    ON CONFLICT DO NOTHING;
+
+    -- Local admin keeps direct READ as well (OIDC admin tasks via guacadmin).
+    INSERT INTO guacamole_connection_permission (entity_id, connection_id, permission)
+    SELECT e.entity_id, c.connection_id, 'READ'::guacamole_object_permission_type
+    FROM guacamole_entity e
+    CROSS JOIN guacamole_connection c
+    WHERE e.name = 'guacadmin' AND e.type = 'USER'
+    ON CONFLICT DO NOTHING;

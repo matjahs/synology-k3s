@@ -16,6 +16,8 @@ spec:
     enabled: true
     sslRequired: external
     registrationAllowed: false
+    groups:
+      - name: homelab
     clients:
       - clientId: guacamole
         name: Guacamole
@@ -35,3 +37,12 @@ spec:
           - "https://guacamole.lab.mxe11.nl"
         attributes:
           post.logout.redirect.uris: "https://guacamole.lab.mxe11.nl/guacamole/*"
+        protocolMappers:
+          - name: groups
+            protocol: openid-connect
+            protocolMapper: oidc-group-membership-mapper
+            config:
+              claim.name: groups
+              full.path: "false"
+              id.token.claim: "true"
+              access.token.claim: "false"

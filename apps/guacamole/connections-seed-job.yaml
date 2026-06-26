@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: guacamole-connections-seed
+  namespace: tools
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: seed
+          image: postgres:16-alpine
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: guacamole-db-app
+                  key: password
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              HOST=keycloak-db-rw.keycloak.svc.cluster.local
+              echo "Seeding Guacamole connections..."
+              psql -h "$HOST" -U guacamole -d guacamole -v ON_ERROR_STOP=1 -f /seed/connections.sql
+              echo "Connections:"
+              psql -h "$HOST" -U guacamole -d guacamole -c \
+                "SELECT connection_name, protocol FROM guacamole_connection ORDER BY connection_name;"
+              echo "Done."
+          volumeMounts:
+            - name: connections
+              mountPath: /seed
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: connections
+          configMap:
+            name: guacamole-connections

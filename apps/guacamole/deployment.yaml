@@ -77,6 +77,12 @@ spec:
               value: https://guacamole.lab.mxe11.nl/guacamole/
             - name: OPENID_USERNAME_CLAIM_TYPE
               value: preferred_username
+            - name: OPENID_GROUPS_CLAIM_TYPE
+              value: groups
+            # Without this, OpenID has priority and redirects straight to Keycloak.
+            # "*,openid" shows the local login form plus an SSO link.
+            - name: EXTENSION_PRIORITY
+              value: "*,openid"
           resources:
             requests:
               cpu: 100m
