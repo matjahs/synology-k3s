@@ -58,16 +58,26 @@ Auth provider (guest, Keycloak OIDC, etc.) is your choice in the external repo.
 
 ### CI in external repo
 
-- Build with the standard Backstage `Dockerfile` / `yarn build-image`.
-- **Build for `linux/amd64`** — the k3s node is x86_64; images built on Apple Silicon
-  default to arm64 and fail with `no match for platform in manifest`:
-  ```sh
-  docker buildx build --platform linux/amd64 -t nexus.lab.mxe11.nl/backstage/backstage:1.0.0 --push .
-  ```
-- Push to `nexus.lab.mxe11.nl/backstage/backstage:<tag>`.
-- Use GitHub Actions secrets `NEXUS_USERNAME` / `NEXUS_PASSWORD` for
-  `docker login nexus.lab.mxe11.nl` — these must be **Nexus** credentials
-  (e.g. `admin`), not a GitHub token.
+Releases are automated via **release-please** and GitHub Actions in
+[matjahs/backstage](https://github.com/matjahs/backstage):
+
+1. Merge the Release PR in the backstage repo (version bump + changelog).
+2. CI builds for `linux/amd64`, pushes to Nexus, and opens a PR here bumping `newTag`.
+3. Merge that PR — Argo CD rolls the Deployment.
+
+Do **not** edit `newTag` manually for routine releases; the deploy tag is updated by the automated GitOps PR.
+
+Required secrets in the backstage repo: `NEXUS_USERNAME`, `NEXUS_PASSWORD`, `SYNOLOGY_K3S_PAT`.
+
+Manual local build (emergency only):
+
+```sh
+docker buildx build --platform linux/amd64 -t nexus.lab.mxe11.nl/backstage/backstage:<tag> --push .
+```
+
+Use GitHub Actions secrets `NEXUS_USERNAME` / `NEXUS_PASSWORD` for
+`docker login nexus.lab.mxe11.nl` — these must be **Nexus** credentials
+(e.g. `admin`), not a GitHub token.
 
 See [`apps/nexus/nexus.md`](../nexus/nexus.md) for Nexus Docker setup and
 `401 Unauthorized` troubleshooting.
@@ -110,18 +120,11 @@ ESO produces these Kubernetes Secrets in the `backstage` namespace:
 The Backstage Deployment also sets `POSTGRES_HOST=postgres` and
 `POSTGRES_PORT=5432` as plain env vars.
 
-## Image tag bumps
+## Image tag
 
-When the external repo publishes a new image, bump `newTag` in
-`kustomization.yaml`:
+The deploy tag is set in `kustomization.yaml` (`images[].newTag`). Kustomize overrides the placeholder tag in `backstage.yaml`.
 
-```yaml
-images:
-  - name: nexus.lab.mxe11.nl/backstage/backstage
-    newTag: "1.0.1"
-```
-
-Argo CD will roll the Deployment on sync.
+Routine bumps arrive via automated PRs from the backstage release workflow. Argo CD rolls the Deployment on sync.
 
 ## Verify
 

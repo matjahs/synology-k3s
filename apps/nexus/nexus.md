@@ -34,6 +34,70 @@ password.
 
 2. **Create repositories** as needed (e.g. Maven proxy/hosted, Docker hosted).
 
+## Maven (VCF Build Tools)
+
+Build Tools artifacts (`com.vmware.pscoe.*` @ **4.22.0**) resolve from **Maven Central** via a Nexus proxy. The only manual upload is your **vRO package signing keystore**.
+
+### Repository layout
+
+| Repository key | Type | Remote / purpose |
+|----------------|------|------------------|
+| `maven-central` | maven2 (proxy) | `https://repo1.maven.org/maven2/` |
+| `aria-local` | maven2 (hosted) | vRO signing keystore + optional internal packages |
+| `vcf-maven-public` | maven2 (group) | Members: `aria-local`, then `maven-central` (hosted first) |
+| `npm-proxy` | npm (proxy) | `https://registry.npmjs.org` |
+| `vcf-npm-public` | npm (group) | Members: `npm-proxy` |
+
+Create them under **Administration → Repository → Repositories → Create repository**.
+
+For `vcf-maven-public`, add **aria-local before maven-central** so a hosted keystore wins over anything on Central.
+
+### Upload the vRO signing keystore (one-time)
+
+Signing material lives at `~/.vro-signing/` (`cert.pem`, `private_key.pem`). Package and deploy:
+
+```sh
+WORKDIR=$(mktemp -d)
+mkdir -p "$WORKDIR/vcf-lab-vro-signing-1.0.0"
+cp ~/.vro-signing/cert.pem ~/.vro-signing/private_key.pem \
+  "$WORKDIR/vcf-lab-vro-signing-1.0.0/"
+(cd "$WORKDIR" && zip -r vcf-lab-vro-signing-1.0.0.zip vcf-lab-vro-signing-1.0.0)
+
+mvn deploy:deploy-file \
+  -DgroupId=com.vcf.lab \
+  -DartifactId=vcf-lab-vro-signing \
+  -Dversion=1.0.0 \
+  -Dpackaging=zip \
+  -Dfile="$WORKDIR/vcf-lab-vro-signing-1.0.0.zip" \
+  -DrepositoryId=aria-local \
+  -Durl=https://nexus.lab.mxe11.nl/repository/aria-local/
+```
+
+Import `cert.pem` into Orchestrator (Administration → Certificates) so signed packages validate.
+
+### Developer `settings.xml`
+
+See [`maven-settings.example.xml`](./maven-settings.example.xml). Copy to `~/.m2/settings.xml`, set Nexus credentials under `<servers>`, and activate profiles `packaging` + `dev`.
+
+Quick sanity check after configuring Nexus:
+
+```sh
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+mvn -q dependency:get \
+  -Dartifact=com.vmware.pscoe.polyglot:polyglot-project:4.22.0:pom
+```
+
+### npm (polyglot / Node.js actions)
+
+Point npm at the Nexus group:
+
+```sh
+npm config set registry https://nexus.lab.mxe11.nl/repository/vcf-npm-public/
+npm login --registry=https://nexus.lab.mxe11.nl/repository/vcf-npm-public/
+```
+
+Build Tools also publishes npm bundles as Maven `.tgz` artifacts under `com.vmware.pscoe.iac` and `com.vmware.pscoe.ts.types` — those come through the Maven proxy on first `mvn package`.
+
 ## Docker registry
 
 Nexus serves Docker over the same hostname as the UI (`nexus.lab.mxe11.nl`). TLS is

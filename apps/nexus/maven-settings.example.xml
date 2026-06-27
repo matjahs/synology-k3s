@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Example ~/.m2/settings.xml for VCF Build Tools via nexus.lab.mxe11.nl.
+
+  Copy to ~/.m2/settings.xml and replace:
+    - NEXUS_USER / NEXUS_PASSWORD
+    - vro.password / vrang.password (or use env vars as shown)
+    - paths if your signing material lives elsewhere
+
+  Prerequisites: Nexus repos created per apps/nexus/nexus.md (Maven section).
+-->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.1.0 http://maven.apache.org/xsd/settings-1.1.0.xsd">
+
+  <servers>
+    <server>
+      <id>nexus</id>
+      <username>NEXUS_USER</username>
+      <password>NEXUS_PASSWORD</password>
+    </server>
+    <server>
+      <id>aria-local</id>
+      <username>NEXUS_USER</username>
+      <password>NEXUS_PASSWORD</password>
+    </server>
+  </servers>
+
+  <mirrors>
+    <!-- Route all Maven Central resolution through the Nexus group -->
+    <mirror>
+      <id>nexus</id>
+      <mirrorOf>central</mirrorOf>
+      <name>Nexus vcf-maven-public</name>
+      <url>https://nexus.lab.mxe11.nl/repository/vcf-maven-public/</url>
+    </mirror>
+  </mirrors>
+
+  <profiles>
+    <!-- Package signing: keystore pulled from Nexus aria-local hosted repo -->
+    <profile>
+      <id>packaging</id>
+      <properties>
+        <keystoreGroupId>com.vcf.lab</keystoreGroupId>
+        <keystoreArtifactId>vcf-lab-vro-signing</keystoreArtifactId>
+        <keystoreVersion>1.0.0</keystoreVersion>
+        <vroPrivateKeyPem>target/${keystoreArtifactId}-${keystoreVersion}/private_key.pem</vroPrivateKeyPem>
+        <vroCertificatePem>target/${keystoreArtifactId}-${keystoreVersion}/cert.pem</vroCertificatePem>
+        <vroKeyPass>VMware1!</vroKeyPass>
+      </properties>
+    </profile>
+
+    <!-- Local file signing (no Nexus keystore fetch) — use instead of packaging above -->
+    <!--
+    <profile>
+      <id>packaging-local</id>
+      <properties>
+        <vroPrivateKeyPem>${user.home}/.vro-signing/private_key.pem</vroPrivateKeyPem>
+        <vroCertificatePem>${user.home}/.vro-signing/cert.pem</vroCertificatePem>
+        <vroKeyPass>VMware1!</vroKeyPass>
+      </properties>
+    </profile>
+    -->
+
+    <!-- VCF Automation / Orchestrator deploy target (site-a homelab) -->
+    <profile>
+      <id>dev</id>
+      <properties>
+        <vro.host>auto-a.site-a.vcf.lab</vro.host>
+        <vro.auth>vra</vro.auth>
+        <vro.authHost>auto-a.site-a.vcf.lab</vro.authHost>
+        <vro.authPort>443</vro.authPort>
+        <vro.port>443</vro.port>
+        <vro.username>admin@System</vro.username>
+        <vro.password>${env.VRO_PASSWORD}</vro.password>
+
+        <vrang.host>auto-a.site-a.vcf.lab</vrang.host>
+        <vrang.auth.host>auto-a.site-a.vcf.lab</vrang.auth.host>
+        <vrang.username>admin@System</vrang.username>
+        <vrang.password>${env.VRO_PASSWORD}</vrang.password>
+        <vrang.port>443</vrang.port>
+        <vrang.project.name>Development</vrang.project.name>
+        <vrang.org.name>vm-apps</vrang.org.name>
+        <vrang.import.timeout>6</vrang.import.timeout>
+
+        <vrealize.ssl.ignore.hostname>true</vrealize.ssl.ignore.hostname>
+        <vrealize.ssl.ignore.certificate>true</vrealize.ssl.ignore.certificate>
+        <http.connection.timeout>10000000</http.connection.timeout>
+      </properties>
+    </profile>
+
+    <!-- Tell Build Tools where to publish signed packages (optional) -->
+    <profile>
+      <id>nexus-repos</id>
+      <properties>
+        <releaseRepositoryUrl>https://nexus.lab.mxe11.nl/repository/aria-local/</releaseRepositoryUrl>
+        <snapshotRepositoryUrl>https://nexus.lab.mxe11.nl/repository/aria-local/</snapshotRepositoryUrl>
+      </properties>
+    </profile>
+  </profiles>
+
+  <activeProfiles>
+    <activeProfile>packaging</activeProfile>
+    <activeProfile>nexus-repos</activeProfile>
+  </activeProfiles>
+</settings>
