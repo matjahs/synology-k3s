@@ -4,4 +4,5 @@ kind: Kustomization
 namespace: observability
 
 resources:
-  - splunk-otel-collector-external-secret.yaml
+#  - splunk-otel-collector-external-secret.yaml
+  - grafana-external-secret.yaml
