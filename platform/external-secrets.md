@@ -32,6 +32,9 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/guacamole/db`            | `password`             | `keycloak/guacamole-db-creds`, `tools/guacamole-db-app` |
 | `secret/data/backstage/db`            | `username`, `password` | `backstage/postgres-secrets`                            |
 | `secret/data/backstage/github`        | `token`                | `backstage/backstage-secrets`                           |
+| `secret/data/backstage/keycloak`      | `client_secret`        | `backstage/backstage-secrets`                           |
+| `secret/data/backstage/session`       | `secret`               | `backstage/backstage-secrets`                           |
+| `secret/data/backstage/argocd`        | `token`                | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/nexus-docker`  | `username`, `password` | `backstage/nexus-docker-creds`                          |
 
 ## Populate Secrets (before first sync)
@@ -60,6 +63,9 @@ vault kv put secret/backstage/github \
 vault kv put secret/backstage/nexus-docker \
   username=<nexus-user> \
   password=<nexus-password>
+
+vault kv put secret/backstage/argocd \
+  token=<argocd-api-token>
 ```
 
 ## Verify

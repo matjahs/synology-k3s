@@ -1,3 +1,4 @@
+# Disabled - excluded from root-app.yaml until re-enabled.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

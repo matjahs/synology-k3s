@@ -104,6 +104,9 @@ vault kv put secret/backstage/github \
 vault kv put secret/backstage/nexus-docker \
   username=<nexus-user> \
   password=<nexus-password>
+
+vault kv put secret/backstage/argocd \
+  token=<argocd-api-token>
 ```
 
 If a GitHub PAT was ever committed to git, **rotate it** in GitHub before
@@ -115,6 +118,9 @@ ESO produces these Kubernetes Secrets in the `backstage` namespace:
 |------------|------------|------|
 | `secret/backstage/db` | `postgres-secrets` | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB=backstage` |
 | `secret/backstage/github` | `backstage-secrets` | `GITHUB_TOKEN` |
+| `secret/backstage/keycloak` | `backstage-secrets` | `AUTH_KEYCLOAK_CLIENT_SECRET` |
+| `secret/backstage/session` | `backstage-secrets` | `AUTH_SESSION_SECRET` |
+| `secret/backstage/argocd` | `backstage-secrets` | `ARGOCD_AUTH_TOKEN` |
 | `secret/backstage/nexus-docker` | `nexus-docker-creds` | docker-registry pull secret for Nexus |
 
 The Backstage Deployment also sets `POSTGRES_HOST=postgres` and
