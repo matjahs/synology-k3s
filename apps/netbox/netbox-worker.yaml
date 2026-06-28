@@ -14,14 +14,24 @@ spec:
       labels:
         app: netbox-worker
     spec:
+      initContainers:
+        - name: wait-for-netbox
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until wget -q -O /dev/null http://netbox/login/; do
+                echo "waiting for netbox web..."
+                sleep 5
+              done
       containers:
         - name: netbox-worker
           image: ghcr.io/netbox-community/netbox:v4.4-3.4.1
           imagePullPolicy: IfNotPresent
           command:
-            - /opt/netbox/docker-entrypoint.sh
-          args:
             - /opt/netbox/venv/bin/python
+          args:
             - /opt/netbox/netbox/manage.py
             - rqworker
           env:
