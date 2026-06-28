@@ -14,7 +14,9 @@ metadata:
   namespace: kube-system
 spec:
   serviceSelector: {}
-  nodeSelector: {}
+  nodeSelector:
+    matchLabels:
+      ingress: "true"
   interfaces:
     - enp3s0
   loadBalancerIPs: true
