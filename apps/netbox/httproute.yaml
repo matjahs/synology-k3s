@@ -1,0 +1,39 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: netbox
+  namespace: netbox
+spec:
+  parentRefs:
+    - name: external-gateway
+      namespace: kube-system
+      sectionName: https-netbox
+  hostnames:
+    - netbox.lab.mxe11.nl
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: netbox
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: netbox-redirect
+  namespace: netbox
+spec:
+  parentRefs:
+    - name: external-gateway
+      namespace: kube-system
+      sectionName: http
+  hostnames:
+    - netbox.lab.mxe11.nl
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301

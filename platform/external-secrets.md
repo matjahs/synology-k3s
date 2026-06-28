@@ -37,6 +37,8 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/backstage/argocd`        | `token`                | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/nexus-docker`  | `username`, `password` | `backstage/nexus-docker-creds`                          |
 | `secret/data/grafana/admin`           | `user`, `password`     | `observability/grafana-admin`                           |
+| `secret/data/netbox/db`               | `username`, `password` | `netbox/netbox-db-app`                                  |
+| `secret/data/netbox/app`              | `secret_key`, `superuser_name`, `superuser_email`, `superuser_password` | `netbox/netbox-secrets` |
 
 ## Populate Secrets (before first sync)
 
@@ -67,6 +69,16 @@ vault kv put secret/backstage/nexus-docker \
 
 vault kv put secret/backstage/argocd \
   token=<argocd-api-token>
+
+vault kv put secret/netbox/db \
+  username=netbox \
+  password=<strong-password>
+
+vault kv put secret/netbox/app \
+  secret_key=<django-secret-key> \
+  superuser_name=admin \
+  superuser_email=admin@lab.mxe11.nl \
+  superuser_password=<strong-password>
 ```
 
 ## Verify

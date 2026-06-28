@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbox
+  namespace: netbox
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: netbox
+  template:
+    metadata:
+      labels:
+        app: netbox
+    spec:
+      containers:
+        - name: netbox
+          image: ghcr.io/netbox-community/netbox:v4.4-3.4.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: DB_HOST
+              value: netbox-db-rw
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: netbox
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_DATABASE
+              value: "0"
+            - name: REDIS_CACHE_DATABASE
+              value: "1"
+            - name: ALLOWED_HOSTS
+              value: netbox.lab.mxe11.nl
+            - name: CSRF_TRUSTED_ORIGINS
+              value: https://netbox.lab.mxe11.nl
+            - name: USE_X_FORWARDED_HOST
+              value: "true"
+          envFrom:
+            - secretRef:
+                name: netbox-secrets
+          volumeMounts:
+            - name: media
+              mountPath: /opt/netbox/netbox/media
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          startupProbe:
+            httpGet:
+              port: http
+              path: /login/
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /login/
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /login/
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: netbox-media

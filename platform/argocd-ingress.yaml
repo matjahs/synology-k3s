@@ -69,6 +69,19 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    - name: https-netbox
+      protocol: HTTPS
+      port: 443
+      hostname: netbox.lab.mxe11.nl
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: netbox-tls
+            namespace: kube-system
+      allowedRoutes:
+        namespaces:
+          from: All
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: netbox-worker
+  namespace: netbox
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: netbox-worker
+  template:
+    metadata:
+      labels:
+        app: netbox-worker
+    spec:
+      containers:
+        - name: netbox-worker
+          image: ghcr.io/netbox-community/netbox:v4.4-3.4.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /opt/netbox/docker-entrypoint.sh
+          args:
+            - /opt/netbox/venv/bin/python
+            - /opt/netbox/netbox/manage.py
+            - rqworker
+          env:
+            - name: DB_HOST
+              value: netbox-db-rw
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: netbox
+            - name: REDIS_HOST
+              value: redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_DATABASE
+              value: "0"
+            - name: REDIS_CACHE_DATABASE
+              value: "1"
+            - name: ALLOWED_HOSTS
+              value: netbox.lab.mxe11.nl
+          envFrom:
+            - secretRef:
+                name: netbox-secrets
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
