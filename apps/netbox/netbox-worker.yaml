@@ -21,7 +21,7 @@ spec:
             - sh
             - -c
             - |
-              until wget -q -O /dev/null http://netbox/login/; do
+              until nc -z netbox 80; do
                 echo "waiting for netbox web..."
                 sleep 5
               done

@@ -39,7 +39,7 @@ spec:
             - name: REDIS_CACHE_DATABASE
               value: "1"
             - name: ALLOWED_HOSTS
-              value: netbox.lab.mxe11.nl
+              value: netbox.lab.mxe11.nl,localhost,127.0.0.1
             - name: CSRF_TRUSTED_ORIGINS
               value: https://netbox.lab.mxe11.nl
             - name: USE_X_FORWARDED_HOST
@@ -58,22 +58,19 @@ spec:
               memory: "2Gi"
               cpu: "1000m"
           startupProbe:
-            httpGet:
+            tcpSocket:
               port: http
-              path: /login/
             initialDelaySeconds: 60
             failureThreshold: 120
             periodSeconds: 10
           readinessProbe:
-            httpGet:
+            tcpSocket:
               port: http
-              path: /login/
             periodSeconds: 10
             failureThreshold: 3
           livenessProbe:
-            httpGet:
+            tcpSocket:
               port: http
-              path: /login/
             periodSeconds: 10
             failureThreshold: 3
       volumes:
