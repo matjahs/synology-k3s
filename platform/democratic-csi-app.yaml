@@ -51,6 +51,23 @@ spec:
 
         node:
           enabled: true
+          # Pi observability worker is tainted; CSI must run on every node that
+          # mounts synology-iscsi PVCs (Grafana, Prometheus, etc.).
+          tolerations:
+            - key: observability
+              operator: Equal
+              value: enabled
+              effect: NoSchedule
+          driver:
+            # democratic-csi ships busybox mount at /usr/local/bin/mount; bind
+            # mounts need host util-linux (Pi bookworm has it at /usr/bin/mount).
+            extraEnv:
+              - name: USE_HOST_MOUNT_TOOLS
+                value: "1"
+              - name: ISCSIADM_HOST_STRATEGY
+                value: nsenter
+              - name: ISCSIADM_HOST_PATH
+                value: /usr/sbin/iscsiadm
 
         driver:
           # Credentials are supplied out-of-band via this Secret (key
