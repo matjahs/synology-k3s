@@ -36,7 +36,7 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/backstage/session`       | `secret`               | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/argocd`        | `token`                | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/nexus-docker`  | `username`, `password` | `backstage/nexus-docker-creds`                          |
-| `secret/data/grafana/admin`           | `password`             | `?`                                                     |
+| `secret/data/grafana/admin`           | `password`             | `observability/grafana-admin`                           |
 
 ## Populate Secrets (before first sync)
 
