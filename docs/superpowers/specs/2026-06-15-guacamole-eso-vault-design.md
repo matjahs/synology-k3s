@@ -33,7 +33,7 @@ ArgoCD Application deploying the `external-secrets` Helm chart into the `externa
 spec:
   provider:
     vault:
-      server: "https://vault.mxe11.nl"
+      server: "https://vault.mxe11.nl:8200"
       path: "secret"
       version: "v2"
       auth:

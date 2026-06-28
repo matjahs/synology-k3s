@@ -206,7 +206,7 @@ metadata:
 spec:
   provider:
     vault:
-      server: "https://vault.mxe11.nl"
+      server: "https://vault.mxe11.nl:8200"
       path: "secret"
       version: "v2"
       auth:
