@@ -38,6 +38,8 @@ See also [platform/external-secrets.md](../../platform/external-secrets.md).
 
 After Argo CD sync and pods are healthy, log in at https://netbox.lab.mxe11.nl with the `superuser_name` / `superuser_password` from Vault. The superuser is created on first web pod startup only.
 
+**First boot** runs a large Django migration set and can take 10–15 minutes on a homelab node. The web Deployment uses an extended startup probe (`failureThreshold: 120`) so Kubernetes does not kill the pod mid-migration. If migrations are interrupted (e.g. probe too short), reset the CNPG cluster and its PVC before retrying.
+
 ## Upgrade image tag
 
 Bump the tag in `kustomization.yaml` under `images:` and commit. Argo CD will roll the web and worker Deployments; the netbox-docker entrypoint runs DB migrations on startup.

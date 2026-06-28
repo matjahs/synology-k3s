@@ -55,13 +55,14 @@ spec:
               memory: "512Mi"
               cpu: "250m"
             limits:
-              memory: "1Gi"
-              cpu: "500m"
+              memory: "2Gi"
+              cpu: "1000m"
           startupProbe:
             httpGet:
               port: http
               path: /login/
-            failureThreshold: 30
+            initialDelaySeconds: 60
+            failureThreshold: 120
             periodSeconds: 10
           readinessProbe:
             httpGet:
