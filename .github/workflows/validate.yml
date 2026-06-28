@@ -71,12 +71,3 @@ jobs:
           helm template cnpg cloudnative-pg \
             --repo https://cloudnative-pg.github.io/charts \
             --version 0.28.2 > /dev/null
-      - name: Render Splunk OTel Collector chart
-        run: |
-          helm template splunk-otel-collector splunk-otel-collector \
-            --repo https://signalfx.github.io/splunk-otel-collector-chart \
-            --version 0.154.0 \
-            --set secret.create=false \
-            --set clusterName=synology-k3s \
-            --set splunkObservability.realm=eu1 \
-            --set gateway.enabled=false > /dev/null

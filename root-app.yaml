@@ -14,7 +14,7 @@ spec:
       # Discover every child Application manifest at any depth, but not this
       # root Application itself (it is applied manually during bootstrap).
       include: '**/*-app.yaml'
-      exclude: '{root-app.yaml,apps/observability/splunk-otel-collector-app.yaml}'
+      exclude: '{root-app.yaml}'
   destination:
     server: "https://kubernetes.default.svc"
     namespace: argocd
