@@ -1,6 +1,6 @@
 # External Secrets Operator
 
-ESO syncs secrets from Vault (https://vault.mxe11.nl) into Kubernetes Secrets via the `vault` ClusterSecretStore.
+ESO syncs secrets from Vault (`https://vault.mxe11.nl:8200`) into Kubernetes Secrets via the `vault` ClusterSecretStore.
 
 ## Vault Setup (one-time, out-of-band)
 
@@ -35,6 +35,7 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/backstage/keycloak`      | `client_secret`        | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/session`       | `secret`               | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/argocd`        | `token`                | `backstage/backstage-secrets`                           |
+| `secret/data/backstage/vault`         | `secret`               | `backstage/backstage-secrets` (`VAULT_STATIC_SECRET`)     |
 | `secret/data/backstage/nexus-docker`  | `username`, `password` | `backstage/nexus-docker-creds`                          |
 | `secret/data/grafana/admin`           | `user`, `password`     | `observability/grafana-admin`                           |
 | `secret/data/netbox/db`               | `username`, `password` | `netbox/netbox-db-app`                                  |

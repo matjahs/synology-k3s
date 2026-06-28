@@ -107,7 +107,14 @@ vault kv put secret/backstage/nexus-docker \
 
 vault kv put secret/backstage/argocd \
   token=<argocd-api-token>
+
+vault kv put secret/backstage/vault \
+  secret=<vault-token-for-backstage-plugin>
 ```
+
+Vault listens on **`:8200`** (native TLS on the Pi). The Backstage image
+bakes `https://vault.mxe11.nl:8200` into `app-config.production.yaml`; do not
+use port 443 (HAProxy was removed).
 
 If a GitHub PAT was ever committed to git, **rotate it** in GitHub before
 storing the new value in Vault.
@@ -121,6 +128,7 @@ ESO produces these Kubernetes Secrets in the `backstage` namespace:
 | `secret/backstage/keycloak` | `backstage-secrets` | `AUTH_KEYCLOAK_CLIENT_SECRET` |
 | `secret/backstage/session` | `backstage-secrets` | `AUTH_SESSION_SECRET` |
 | `secret/backstage/argocd` | `backstage-secrets` | `ARGOCD_AUTH_TOKEN` |
+| `secret/backstage/vault` | `backstage-secrets` | `VAULT_STATIC_SECRET` |
 | `secret/backstage/nexus-docker` | `nexus-docker-creds` | docker-registry pull secret for Nexus |
 
 The Backstage Deployment also sets `POSTGRES_HOST=postgres` and
