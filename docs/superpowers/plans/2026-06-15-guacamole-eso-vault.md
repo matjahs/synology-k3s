@@ -895,13 +895,13 @@ spec:
 - [ ] Add `apps/guacamole` to the kustomize-kubeconform loop. In `.github/workflows/validate.yaml`, change:
 
 ```yaml
-          for d in platform apps/cyberchef apps/keycloak; do
+          for d in platform apps/keycloak; do
 ```
 
 to:
 
 ```yaml
-          for d in platform apps/cyberchef apps/keycloak apps/guacamole; do
+          for d in platform apps/keycloak apps/guacamole; do
 ```
 
 - [ ] Validate locally to confirm the build passes:

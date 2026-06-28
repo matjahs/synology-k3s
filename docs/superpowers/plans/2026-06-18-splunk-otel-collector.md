@@ -208,13 +208,13 @@ git commit -m "feat(observability): add Splunk OTel Collector Helm app and Exter
 In `.github/workflows/validate.yaml`, find the `kustomize-kubeconform` job's `Validate Kustomize builds` step. The current loop is:
 
 ```yaml
-          for d in platform apps/cyberchef apps/keycloak apps/guacamole; do
+          for d in platform apps/keycloak apps/guacamole; do
 ```
 
 Change it to:
 
 ```yaml
-          for d in platform apps/cyberchef apps/keycloak apps/guacamole apps/observability; do
+          for d in platform apps/keycloak apps/guacamole apps/observability; do
 ```
 
 - [ ] **Step 2: Add a Helm render step for the Splunk OTel chart**

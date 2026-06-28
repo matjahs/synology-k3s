@@ -36,7 +36,7 @@ Ordered by priority. See commit history for the bug-fix / restructure work alrea
 - [~] **Real PKI**, not per-service self-signed. `letsencrypt-prod`/`-staging`
       ClusterIssuers now exist (Let's Encrypt DNS-01 via Cloudflare,
       `platform/letsencrypt-clusterissuer.yaml`) and Keycloak's cert uses them.
-      Still TODO: put TLS on the **external** Gateway (Argo CD + CyberChef are
+      Still TODO: put TLS on the **external** Gateway (Argo CD is
       plain HTTP today). _Later_
 - [ ] **Observability.** Enable Cilium Hubble + relay (nearly free, Cilium already
       installed); add kube-prometheus-stack (Prometheus/Grafana/Alertmanager). _Later_
@@ -50,7 +50,7 @@ Ordered by priority. See commit history for the bug-fix / restructure work alrea
       (`platform/external-dns-app.yaml`, chart `1.21.1` + kashalls UniFi webhook
       `v0.8.2`). Source `gateway-httproute`, policy `sync`. API key applied
       out-of-band (`external-dns-unifi-secret.example.yaml`). See `platform/external-dns.md`.
-      Publishes `keycloak`, `cyberchef`, and `argocd` under `lab.mxe11.nl`.
+      Publishes `keycloak` and `argocd` under `lab.mxe11.nl`.
 
 ## Tier 3 — repo hygiene
 
@@ -61,7 +61,6 @@ Ordered by priority. See commit history for the bug-fix / restructure work alrea
 
 - [X] Cilium `1.19.4` — confirm chart version exists / is current. _1.19.4 is the latest_
 - [X] cert-manager — bumped to `v1.20.2`. _latest is v1.20.2_
-- [X] cyberchef — pinned to `gchq/cyberchef:2.0.0`. _latest is 2.0.0_
 - [X] Keycloak — **migrated off the Bitnami chart** to the upstream Keycloak Operator
       (`platform/keycloak-operator-app.yaml`, pinned `26.6.2`) + a `Keycloak` CR, backed by
       CloudNativePG (`platform/cloudnative-pg-app.yaml`, chart `0.28.2`). Avoids the Bitnami

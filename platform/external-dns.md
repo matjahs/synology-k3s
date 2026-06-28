@@ -25,7 +25,6 @@ Records it will manage today:
 | Host                     | Source HTTPRoute                                            | Target                 |
 | ------------------------ | ----------------------------------------------------------- | ---------------------- |
 | `keycloak.lab.mxe11.nl`  | `apps/keycloak` (Gateway `keycloak`)                        | that Gateway's LB IP   |
-| `cyberchef.lab.mxe11.nl` | `apps/cyberchef` (Gateway `external-gateway`)               | external-gateway LB IP |
 | `argocd.lab.mxe11.nl`    | `platform/argocd-ingress.yaml` (Gateway `external-gateway`) | external-gateway LB IP |
 
 ## One-time setup

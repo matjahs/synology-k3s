@@ -45,7 +45,7 @@ jobs:
             | sudo tar -xz -C /usr/local/bin kubeconform
       - name: Validate Kustomize builds
         run: |
-          for d in platform apps/cyberchef apps/keycloak apps/guacamole apps/nexus apps/observability apps/backstage; do
+          for d in platform apps/keycloak apps/guacamole apps/nexus apps/observability apps/backstage; do
             echo "::group::kustomize build $d"
             # -skip Cluster: datreeio CNPG schema predates spec.managed.databases (added 1.23)
             kustomize build "$d" | kubeconform -strict -summary -ignore-missing-schemas \
