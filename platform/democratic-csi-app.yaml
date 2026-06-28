@@ -65,7 +65,7 @@ spec:
               - name: USE_HOST_MOUNT_TOOLS
                 value: "1"
               - name: ISCSIADM_HOST_STRATEGY
-                value: nsenter
+                value: chroot
               - name: ISCSIADM_HOST_PATH
                 value: /usr/sbin/iscsiadm
 
