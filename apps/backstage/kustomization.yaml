@@ -15,4 +15,4 @@ resources:
 
 images:
   - name: nexus.lab.mxe11.nl/backstage/backstage
-    newTag: "1.1.4"
+    newTag: "1.2.1"
