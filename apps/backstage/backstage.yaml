@@ -33,8 +33,11 @@ spec:
               value: "backstage"
             - name: KEYCLOAK_ISSUER_URL
               value: "https://keycloak.lab.mxe11.nl/realms/master/.well-known/openid-configuration"
-
-          envFrom:
+            # Override baked app-config vault URLs (HAProxy removed; Vault is on :8200).
+            - name: APP_CONFIG_vault_baseUrl
+              value: "https://vault.mxe11.nl:8200"
+            - name: APP_CONFIG_vault_publicUrl
+              value: "https://vault.mxe11.nl:8200"
             - secretRef:
                 name: postgres-secrets
             - secretRef:
