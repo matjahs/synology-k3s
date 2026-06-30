@@ -8,7 +8,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: oci://ghcr.io/actions/actions-runner-controller-charts
+    # OCI Helm: repoURL is the registry path without oci://; chart is the artifact name.
+    repoURL: ghcr.io/actions/actions-runner-controller-charts
     chart: gha-runner-scale-set-controller
     targetRevision: 0.14.2
     helm:
