@@ -40,6 +40,7 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/grafana/admin`           | `user`, `password`     | `observability/grafana-admin`                           |
 | `secret/data/netbox/db`               | `username`, `password` | `netbox/netbox-db-app`                                  |
 | `secret/data/netbox/app`              | `secret_key`, `superuser_name`, `superuser_email`, `superuser_password` | `netbox/netbox-secrets` |
+| `secret/data/github/runners`          | `app_id`, `installation_id`, `private_key` | `ci/arc-github-app` |
 
 ## Populate Secrets (before first sync)
 
@@ -80,6 +81,11 @@ vault kv put secret/netbox/app \
   superuser_name=admin \
   superuser_email=admin@lab.mxe11.nl \
   superuser_password=<strong-password>
+
+vault kv put secret/github/runners \
+  app_id=<github-app-id> \
+  installation_id=<github-app-installation-id> \
+  private_key=@/path/to/private-key.pem
 ```
 
 ## Verify
