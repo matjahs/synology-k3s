@@ -3,7 +3,7 @@
 # Requires: vault CLI authenticated to https://vault.mxe11.nl
 set -euo pipefail
 
-: "${VAULT_ADDR:=https://vault.mxe11.nl}"
+: "${VAULT_ADDR:=https://vault.mxe11.nl:8200}"
 
 echo "Using VAULT_ADDR=${VAULT_ADDR}"
 vault status >/dev/null
