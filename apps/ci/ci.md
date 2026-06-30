@@ -117,3 +117,4 @@ In each GitHub repo: **Settings → Actions → Runners** — you should see `k3
 | Listener pod crash loop | App ID / installation ID must be **strings**; private key PEM intact |
 | Job stuck “Waiting for a runner” | `runs-on` label must match `runnerScaleSetName`; repo must be in the app installation |
 | Argo can’t pull OCI chart | `repoURL` must be `ghcr.io/actions/actions-runner-controller-charts` (no `oci://` prefix); `platform/ghcr-arc-charts-repository.yaml` sets `enableOCI: true` |
+| EphemeralRunner `InvalidPod` / missing image | `template.spec.containers` overrides must include `image` and `command`, not just `resources` |
