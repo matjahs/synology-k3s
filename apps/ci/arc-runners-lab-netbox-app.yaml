@@ -18,11 +18,17 @@ spec:
         runnerScaleSetName: k3s-lab-netbox
         minRunners: 0
         maxRunners: 2
+        containerMode:
+          type: dind
         controllerServiceAccount:
           namespace: ci
           name: arc-controller-gha-rs-controller
         template:
           spec:
+            # Pod network cannot reach the Cilium L2 gateway IP (hairpin). Use the
+            # node network so docker login/build can reach nexus.lab.mxe11.nl:443.
+            hostNetwork: true
+            dnsPolicy: ClusterFirstWithHostNet
             containers:
               - name: runner
                 image: ghcr.io/actions/actions-runner:latest

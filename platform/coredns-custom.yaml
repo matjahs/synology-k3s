@@ -1,0 +1,15 @@
+# Forward lab.mxe11.nl to UniFi local DNS so in-cluster pods (CI runners,
+# apps pulling from Nexus, etc.) resolve the same hostnames as LAN clients.
+# external-dns publishes records to UniFi at 172.16.0.1; CoreDNS only knows
+# cluster.local and the static NodeHosts entries in the stock k3s Corefile.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  lab.server: |
+    lab.mxe11.nl:53 {
+      forward . 172.16.0.1
+      cache 30
+    }

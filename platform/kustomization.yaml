@@ -13,3 +13,4 @@ resources:
   - vault-secret-store.yaml
   - cloudflare-external-secret.yaml
   - ghcr-arc-charts-repository.yaml
+  - coredns-custom.yaml

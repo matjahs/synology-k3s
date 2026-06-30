@@ -118,3 +118,5 @@ In each GitHub repo: **Settings → Actions → Runners** — you should see `k3
 | Job stuck “Waiting for a runner” | `runs-on` label must match `runnerScaleSetName`; repo must be in the app installation |
 | Argo can’t pull OCI chart | `repoURL` must be `ghcr.io/actions/actions-runner-controller-charts` (no `oci://` prefix); `platform/ghcr-arc-charts-repository.yaml` sets `enableOCI: true` |
 | EphemeralRunner `InvalidPod` / missing image | `template.spec.containers` overrides must include `image` and `command`, not just `resources` |
+| `docker login` timeout to Nexus from runner | Cluster DNS must resolve `*.lab.mxe11.nl` (`platform/coredns-custom.yaml`); lab-netbox runners use `hostNetwork` to reach the gateway LB (hairpin) |
+| Docker build fails on runner | Enable `containerMode.type: dind` (privileged) for `docker/build-push-action` |
