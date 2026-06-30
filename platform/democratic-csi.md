@@ -12,16 +12,16 @@ per PersistentVolume, mounted `ReadWriteOnce`, with online expansion support.
 | StorageClass | `synology-iscsi` (**cluster default**)                                 |
 | Access mode  | `ReadWriteOnce` (block)                                                |
 | Expansion    | enabled                                                                |
-| Snapshots    | disabled (see below)                                                   |
+| Snapshots    | enabled (`external-snapshotter` + `synology-iscsi` VolumeSnapshotClass) |
 | Sync wave    | `-1` (before stateful apps)                                            |
 
-Defined in [`democratic-csi-app.yaml`](democratic-csi-app.yaml). All values are
-inlined there; the only secret material is the DSM connection, kept out of git.
+Defined in [`democratic-csi-app.yaml`](democratic-csi-app.yaml). DSM connection
+credentials are synced from Vault via ESO
+([`external-secret-democratic-csi.yaml`](external-secret-democratic-csi.yaml)).
 
 ## One-time setup
 
-The driver credentials live in a Secret applied **out-of-band** — the root
-Argo CD app only discovers `*-app.yaml`, so the Secret is never read from git.
+### DSM + iSCSI initiator
 
 1. **DSM** — create a dedicated user in the `administrators` group (LUN/target
    management needs admin on DSM 7), enable iSCSI, and note the volume
@@ -37,28 +37,23 @@ Argo CD app only discovers `*-app.yaml`, so the Secret is never read from git.
    echo iscsi_tcp | sudo tee /etc/modules-load.d/iscsi.conf
    ```
 
-3. **Secret** — fill in [`democratic-csi-secret.example.yaml`](democratic-csi-secret.example.yaml)
-   and apply it (the data key must stay `driver-config-file.yaml`):
+### Vault + ESO
 
-   ```bash
-   cp democratic-csi-secret.example.yaml /tmp/dcsi-secret.yaml
-   $EDITOR /tmp/dcsi-secret.yaml
-   kubectl create namespace democratic-csi --dry-run=client -o yaml | kubectl apply -f -
-   kubectl apply -f /tmp/dcsi-secret.yaml
-   shred -u /tmp/dcsi-secret.yaml
-   ```
+Populate `secret/democratic-csi/driver` in Vault (see
+[`external-secrets.md`](external-secrets.md)). ESO renders the
+`driver-config-file.yaml` key into `democratic-csi/democratic-csi-driver-config`.
 
-   The controller pod CrashLoops until this Secret exists — that's expected;
-   Argo CD self-heal recovers it once applied.
+The controller pod CrashLoops until the Secret exists — expected on first sync.
 
-> When the Tier-1 SOPS + age work lands, replace this manual step with a SOPS-
-> encrypted Secret in git and drop the `.example` file.
+[`democratic-csi-secret.example.yaml`](democratic-csi-secret.example.yaml) remains
+as a reference for the Secret shape; prefer Vault/ESO over manual `kubectl apply`.
 
 ## Verify
 
 ```bash
 kubectl get pods -n democratic-csi
 kubectl get storageclass            # synology-iscsi should be (default)
+kubectl get externalsecret -n democratic-csi democratic-csi-driver-config
 
 kubectl apply -f - <<'EOF'
 apiVersion: v1
