@@ -116,4 +116,4 @@ In each GitHub repo: **Settings → Actions → Runners** — you should see `k3
 | `arc-github-app` not ready | Vault path `secret/github/runners` and ESO logs |
 | Listener pod crash loop | App ID / installation ID must be **strings**; private key PEM intact |
 | Job stuck “Waiting for a runner” | `runs-on` label must match `runnerScaleSetName`; repo must be in the app installation |
-| Argo can’t pull OCI chart | Cluster egress to `ghcr.io`; Argo CD 2.4+ with OCI support |
+| Argo can’t pull OCI chart | `repoURL` must be `ghcr.io/actions/actions-runner-controller-charts` (no `oci://` prefix); `platform/ghcr-arc-charts-repository.yaml` sets `enableOCI: true` |

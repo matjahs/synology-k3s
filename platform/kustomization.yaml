@@ -12,3 +12,4 @@ resources:
   - external-gateway-certs.yaml
   - vault-secret-store.yaml
   - cloudflare-external-secret.yaml
+  - ghcr-arc-charts-repository.yaml

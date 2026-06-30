@@ -1,0 +1,15 @@
+# Registers the public GHCR OCI Helm repository for Actions Runner Controller.
+# Without enableOCI, Argo CD treats repoURL as a classic Helm index URL and fails
+# with 403 on ghcr.io/token.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ghcr-arc-charts
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+stringData:
+  name: ghcr-arc-charts
+  type: helm
+  url: ghcr.io/actions/actions-runner-controller-charts
+  enableOCI: "true"
