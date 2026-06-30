@@ -37,6 +37,21 @@ The same `keycloak-db-app` Secret is used by CNPG (to create the `keycloak`
 role) and by the Keycloak CR (to connect). CNPG's bootstrap and Keycloak both
 fail-and-retry until it exists — expected.
 
+### CNPG backups (Garage S3)
+
+Backups use `spec.backup.barmanObjectStore` + a daily `ScheduledBackup`. Populate
+Vault `secret/cnpg/backup-s3` first (see
+[`platform/external-secrets.md`](../../platform/external-secrets.md)).
+
+Ensure `endpointURL` and `destinationPath` in [`postgres-cluster.yaml`](postgres-cluster.yaml)
+match the Vault `endpoint_url` and `bucket` values.
+
+| File | Role |
+|------|------|
+| [`external-secret-backup-s3.yaml`](external-secret-backup-s3.yaml) | S3 credentials from Vault |
+| [`postgres-cluster.yaml`](postgres-cluster.yaml) | `spec.backup.barmanObjectStore` |
+| [`scheduled-backup.yaml`](scheduled-backup.yaml) | Daily base backup (`immediate: true` on first sync) |
+
 ### TLS / Let's Encrypt
 
 The `keycloak-tls` cert is issued by the cluster-wide `letsencrypt-prod`
@@ -71,16 +86,18 @@ Then browse to <https://keycloak.lab.mxe11.nl> (trusted Let's Encrypt cert).
 ```bash
 kubectl get pods -n cnpg-system                    # operator running
 kubectl get pods -n keycloak                        # operator + keycloak-0 + keycloak-db-1
-kubectl get cluster -n keycloak keycloak-db         # Cluster in healthy state
+kubectl get cluster -n keycloak keycloak-db         # continuous archiving active
+kubectl get scheduledbackup -n keycloak
+kubectl get backup -n keycloak                      # Completed after first run
 kubectl get keycloak -n keycloak keycloak           # Ready
 kubectl get httproute -n keycloak                   # both routes Accepted
 ```
 
 ## Notes / follow-ups
 
-- **Backups:** CNPG supports scheduled base-backups + WAL archiving, but needs an
-  S3-compatible target (e.g. MinIO on the NAS). Add `spec.backup` to the Cluster
-  plus a `ScheduledBackup` once that exists. Tracked in `TODO.md`.
+- **Backups:** Wired to Garage via `spec.backup.barmanObjectStore` +
+  `ScheduledBackup/keycloak-db-daily`. Confirm objects appear in the Garage bucket
+  after Vault `secret/cnpg/backup-s3` is populated and Argo syncs.
 - **HA:** `instances: 1` for both Keycloak and Postgres — this is a single-node
   k3s cluster. Raise once more nodes join.
 - **Realms:** manage declaratively later with `KeycloakRealmImport` CRs.

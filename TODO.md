@@ -21,14 +21,15 @@ Ordered by priority. See commit history for the bug-fix / restructure work alrea
 - [X] **Renovate** for Helm chart bumps in `*-app.yaml` (`renovate.json`, argocd manager).
       Also tracks `INSTALL_K3S_VERSION` in `bootstrap-k8s-vm.sh`.
 - [~] **Argo CD Image Updater** for container image tags (`apps/argocd/image-updater-app.yaml`,
-      chart `1.1.1`). Nexus registry URL fixed (in-cluster Service). **Still open:**
-      populate Vault `secret/argocd/git` and verify first PR cycle. See
+      chart `1.1.1`). Nexus registry URL fixed (in-cluster Service; synced on cluster).
+      **Still open:** populate Vault `secret/argocd/git` (see `scripts/populate-tier1-vault.sh`),
+      then verify first PR cycle with `./scripts/tier1-verify.sh`. See
       `apps/argocd/image-updater.md`.
 - [~] **Storage + stateful backup.** democratic-csi on `synology-iscsi`; ESO for DSM
       creds; external-snapshotter + VolumeSnapshotClass enabled. CNPG backup manifests
-      wired to Garage (`spec.backup`, `ScheduledBackup`). **Still open:** populate Vault
-      `secret/cnpg/backup-s3`, confirm backups in Garage bucket, smoke-test snapshots.
-      See `platform/democratic-csi.md`, `apps/keycloak/keycloak.md`.
+      in git (PR #15). **Still open:** merge PR #15, populate Vault
+      `secret/cnpg/backup-s3` and `secret/democratic-csi/driver`, confirm backups in
+      Garage bucket. See `platform/democratic-csi.md`, `apps/keycloak/keycloak.md`.
 
 ## Tier 2 — strongly expected
 
