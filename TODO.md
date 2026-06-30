@@ -5,39 +5,30 @@ Ordered by priority. See commit history for the bug-fix / restructure work alrea
 
 ## Tier 1 — absolute must-haves
 
-- [~] **Declarative secrets management.** External Secrets Operator is deployed
-      (`platform/external-secrets-app.yaml`) and syncs most app secrets from Vault;
-      paths are documented in `platform/external-secrets.md`. Remaining manual steps:
-      democratic-csi DSM secret (`democratic-csi-secret.example.yaml`), Keycloak
-      Postgres role password (`apps/keycloak/keycloak-db-secret.example.yaml`), and
-      one-time Vault population for new paths (e.g. `secret/argocd/git` for Image
-      Updater). Original note preferred SOPS + age; ESO is the current approach.
-- [ ] **Argo CD manages itself, at pinned versions.** Currently installed imperatively
-      from the `stable` branch in `bootstrap-k8s-vm.sh` and patched with `kubectl`. Replace
-      with an `argocd-app.yaml` pinned to a tag; make the `server.insecure` patch declarative.
-      Also pin the k3s version (`INSTALL_K3S_VERSION`). _OK_
-- [ ] **Dedicated AppProject** instead of `project: default`. Allow-list the repoURL,
-      destination cluster/namespaces, and `clusterResourceWhitelist`.
+- [X] **Declarative secrets management.** External Secrets Operator syncs app
+      secrets from Vault; paths in `platform/external-secrets.md`. democratic-csi
+      DSM config is ESO-backed (`platform/external-secret-democratic-csi.yaml`).
+      Keycloak DB via ESO. One-time Vault population still required for new paths.
+- [X] **Argo CD manages itself, at pinned versions.** `apps/argocd/argocd-app.yaml`
+      (chart `10.0.1`, `server.insecure: true`); bootstrap pins
+      `INSTALL_K3S_VERSION` and uses Helm template at the same chart version.
+- [X] **Dedicated AppProject** instead of `project: default`. `platform/homelab-appproject.yaml`
+      allow-lists repos and namespaces; all `*-app.yaml` use `project: homelab`.
 - [X] **CI validation on PRs** (GitHub Actions): `.github/workflows/validate.yml` runs
       `kustomize build` + `kubeconform` per app path, `yamllint`, `shellcheck`, and a
       Helm template smoke-test (CNPG). Extend helm-template coverage as more charts are
       added.
 - [X] **Renovate** for Helm chart bumps in `*-app.yaml` (`renovate.json`, argocd manager).
+      Also tracks `INSTALL_K3S_VERSION` in `bootstrap-k8s-vm.sh`.
 - [~] **Argo CD Image Updater** for container image tags (`apps/argocd/image-updater-app.yaml`,
-      chart `1.1.1`). `ImageUpdater` CR targets `backstage` (Nexus, semver) and `netbox`
-      (GHCR, semver); git write-back opens PRs against `main` updating `kustomization.yaml`.
-      **Still open:** populate Vault `secret/argocd/git` (GitHub App with Contents + PR
-      write on `matjahs/synology-k3s`); verify first PR cycle after deploy. See
+      chart `1.1.1`). Nexus registry URL fixed (in-cluster Service). **Still open:**
+      populate Vault `secret/argocd/git` and verify first PR cycle. See
       `apps/argocd/image-updater.md`.
-- [ ] **Storage + stateful backup.** _(CSI done; backup pending.)_ CSI driver added: `democratic-csi` (Synology
-      iSCSI) in `platform/democratic-csi-app.yaml`, exposing the cluster-default
-      `synology-iscsi` StorageClass. Keycloak's Postgres now runs on CloudNativePG
-      (`apps/keycloak/postgres-cluster.yaml`, 8Gi on synology-iscsi). DSM creds are
-      applied out-of-band (`democratic-csi-secret.example.yaml`) pending ESO coverage.
-      **Still open:** DB backup — CNPG can do scheduled base-backups + WAL archiving but
-      needs an S3 target (e.g. MinIO on the NAS); add `spec.backup` + a `ScheduledBackup`
-      once that exists. Also volume snapshots (needs external-snapshotter CRDs).
-      See `platform/democratic-csi.md`.
+- [~] **Storage + stateful backup.** democratic-csi on `synology-iscsi`; ESO for DSM
+      creds; external-snapshotter + VolumeSnapshotClass enabled. CNPG backup manifests
+      wired to Garage (`spec.backup`, `ScheduledBackup`). **Still open:** populate Vault
+      `secret/cnpg/backup-s3`, confirm backups in Garage bucket, smoke-test snapshots.
+      See `platform/democratic-csi.md`, `apps/keycloak/keycloak.md`.
 
 ## Tier 2 — strongly expected
 
