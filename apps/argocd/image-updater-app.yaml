@@ -1,0 +1,54 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-image-updater
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argocd-image-updater
+    targetRevision: 1.1.1
+    helm:
+      values: |
+        crds:
+          install: true
+        rbac:
+          enabled: true
+        createClusterRoles: true
+        config:
+          git.user: argocd-image-updater
+          git.email: noreply@argoproj.io
+          git.commit-message-template: |
+            chore: update images for {{ .AppName }}
+            {{ range .AppChanges -}}
+            updates {{ .Image }} from '{{ .OldTag }}' to '{{ .NewTag }}'
+            {{ end -}}
+          registries:
+            - name: Nexus
+              api_url: https://nexus.lab.mxe11.nl
+              prefix: nexus.lab.mxe11.nl
+              ping: yes
+              credentials: pullsecret:argocd/argocd-image-updater-nexus-creds
+            - name: GitHub Container Registry
+              api_url: https://ghcr.io
+              prefix: ghcr.io
+              ping: yes
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true

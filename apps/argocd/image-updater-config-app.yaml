@@ -1,22 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: backstage
+  name: argocd-image-updater-config
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: default
   source:
     repoURL: https://github.com/matjahs/synology-k3s.git
-    targetRevision: main
-    path: apps/backstage
+    targetRevision: HEAD
+    path: apps/argocd/image-updater
   destination:
     server: https://kubernetes.default.svc
-    namespace: backstage
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
