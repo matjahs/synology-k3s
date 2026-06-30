@@ -5,18 +5,18 @@ when newer semver tags appear in the configured registries.
 
 ## Layout
 
-| File | Role |
-|------|------|
-| `image-updater-app.yaml` | Helm chart — controller + CRDs in `argocd` namespace |
+| File                            | Role                                                            |
+| ------------------------------- | --------------------------------------------------------------- |
+| `image-updater-app.yaml`        | Helm chart — controller + CRDs in `argocd` namespace            |
 | `image-updater-config-app.yaml` | Kustomize — `ImageUpdater` CR and ExternalSecrets (sync-wave 2) |
-| `image-updater/` | Config manifests synced by the config Application |
+| `image-updater/`                | Config manifests synced by the config Application               |
 
 ## Managed applications
 
-| Argo CD App | Image | Registry |
-|-------------|-------|----------|
-| `backstage` | `nexus.lab.mxe11.nl/backstage/backstage` | Nexus |
-| `netbox` | `ghcr.io/netbox-community/netbox` | GHCR (public) |
+| Argo CD App | Image                                    | Registry      |
+| ----------- | ---------------------------------------- | ------------- |
+| `backstage` | `nexus.lab.mxe11.nl/backstage/backstage` | Nexus         |
+| `netbox`    | `ghcr.io/netbox-community/netbox`        | GHCR (public) |
 
 Write-back uses **GitHub pull requests** against `main`, updating each app's
 `kustomization.yaml` `images[].newTag` field.
@@ -26,7 +26,8 @@ Write-back uses **GitHub pull requests** against `main`, updating each app's
 ### GitHub App for PR write-back
 
 Populate `secret/argocd/git` with a GitHub App installed on
-`matjahs/synology-k3s`:
+`matjahs/synology-k3s` (**still required** — Vault was unreachable during git
+implementation; confirm manually):
 
 ```bash
 vault kv put secret/argocd/git \
@@ -75,9 +76,9 @@ kubectl -n argocd logs -l app.kubernetes.io/name=argocd-image-updater --tail=50
 
 ## Troubleshooting
 
-| Symptom | Check |
-|---------|-------|
-| `argocd-image-updater-git-creds` not ready | Vault path `secret/argocd/git` populated; ESO logs |
-| Nexus registry ping fails | `argocd-image-updater-nexus-creds` secret; Nexus reachable from cluster |
-| No PR created | GitHub App permissions; controller logs for SCM API errors |
-| PR merged but no deploy | Target Application `targetRevision` must be `main` |
+| Symptom                                    | Check                                                                   |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| `argocd-image-updater-git-creds` not ready | Vault path `secret/argocd/git` populated; ESO logs                      |
+| Nexus registry ping fails                  | `argocd-image-updater-nexus-creds` secret; Nexus reachable from cluster |
+| No PR created                              | GitHub App permissions; controller logs for SCM API errors              |
+| PR merged but no deploy                    | Target Application `targetRevision` must be `main`                      |

@@ -28,7 +28,7 @@ spec:
             {{ end -}}
           registries:
             - name: Nexus
-              api_url: https://nexus.lab.mxe11.nl
+              api_url: http://nexus-svc.tools.svc.cluster.local:8081
               prefix: nexus.lab.mxe11.nl
               ping: yes
               credentials: pullsecret:argocd/argocd-image-updater-nexus-creds
