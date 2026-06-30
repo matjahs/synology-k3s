@@ -42,6 +42,7 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/netbox/app`              | `secret_key`, `superuser_name`, `superuser_email`, `superuser_password` | `netbox/netbox-secrets` |
 | `secret/data/github/runners`          | `app_id`, `installation_id`, `private_key` | `ci/arc-github-app` |
 | `secret/data/argocd/git`              | `app_id`, `installation_id`, `private_key` | `argocd/argocd-image-updater-git-creds` |
+| `secret/data/cnpg/backup-s3`          | `endpoint_url`, `access_key_id`, `secret_access_key`, `bucket`, `region` | `keycloak/cnpg-backup-s3` |
 
 ## Populate Secrets (before first sync)
 
@@ -92,6 +93,13 @@ vault kv put secret/argocd/git \
   app_id=<github-app-id> \
   installation_id=<github-app-installation-id> \
   private_key=@/path/to/private-key.pem
+
+vault kv put secret/cnpg/backup-s3 \
+  endpoint_url=https://garage.lab.mxe11.nl:3900 \
+  access_key_id=<garage-key> \
+  secret_access_key=<garage-secret> \
+  bucket=cnpg-backups \
+  region=garage
 ```
 
 ## Verify
