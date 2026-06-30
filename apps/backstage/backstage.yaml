@@ -33,11 +33,21 @@ spec:
               value: "backstage"
             - name: KEYCLOAK_ISSUER_URL
               value: "https://keycloak.lab.mxe11.nl/realms/master/.well-known/openid-configuration"
+            # Image 1.2.1 enables the vault plugin when NODE_ENV=production; keep development
+            # until secret/backstage/vault exists and VAULT_STATIC_SECRET is synced by ESO.
+            - name: NODE_ENV
+              value: "development"
             # Override baked app-config vault URLs (HAProxy removed; Vault is on :8200).
             - name: APP_CONFIG_vault_baseUrl
               value: "https://vault.mxe11.nl:8200"
             - name: APP_CONFIG_vault_publicUrl
               value: "https://vault.mxe11.nl:8200"
+            # Image 1.2.1 loads vcf-operations unconditionally; remove when image has credential gating.
+            - name: VCFO_USERNAME
+              value: "unused"
+            - name: VCFO_PASSWORD
+              value: "unused"
+          envFrom:
             - secretRef:
                 name: postgres-secrets
             - secretRef:
