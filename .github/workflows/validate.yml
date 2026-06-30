@@ -48,8 +48,10 @@ jobs:
           for d in platform apps/argocd/image-updater apps/ci apps/keycloak apps/guacamole apps/nexus apps/observability apps/backstage; do
             echo "::group::kustomize build $d"
             # -skip Cluster: datreeio CNPG schema predates spec.managed.databases (added 1.23)
+            # -skip ImageUpdater: datreeio schema omits gitConfig.pullRequest (added in argocd-image-updater v1.1.x)
             kustomize build "$d" | kubeconform -strict -summary -ignore-missing-schemas \
               -skip Cluster \
+              -skip ImageUpdater \
               -schema-location default -schema-location "$CRD_SCHEMA"
             echo "::endgroup::"
           done
