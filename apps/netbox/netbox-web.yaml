@@ -39,7 +39,7 @@ spec:
             - name: REDIS_CACHE_DATABASE
               value: "1"
             - name: ALLOWED_HOSTS
-              value: netbox.lab.mxe11.nl,localhost,127.0.0.1
+              value: netbox.lab.mxe11.nl localhost 127.0.0.1
             - name: CSRF_TRUSTED_ORIGINS
               value: https://netbox.lab.mxe11.nl
             - name: USE_X_FORWARDED_HOST
