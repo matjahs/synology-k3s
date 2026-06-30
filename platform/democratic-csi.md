@@ -67,19 +67,39 @@ kubectl get pvc test-claim          # should reach Bound; a LUN appears in DSM
 kubectl delete pvc test-claim
 ```
 
-## Enabling snapshots later
+## Volume snapshots
 
-Snapshots need cluster-wide CRDs + a controller that this cluster doesn't have
-yet. To enable:
+[`external-snapshotter-app.yaml`](external-snapshotter-app.yaml) installs the
+`snapshot-controller` chart (`0.3.0`) at sync-wave `-2`. democratic-csi enables
+`externalSnapshotter` and a `synology-iscsi` VolumeSnapshotClass.
 
-1. Install the [external-snapshotter](https://github.com/kubernetes-csi/external-snapshotter)
-   CRDs (`VolumeSnapshot*`) and `snapshot-controller` (its own Argo CD app).
-2. In `democratic-csi-app.yaml` set `controller.externalSnapshotter.enabled: true`
-   and add a `volumeSnapshotClasses` entry.
+Smoke-test on a disposable PVC:
+
+```bash
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: snap-test, namespace: default}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 1Gi}}
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata: {name: snap-test-1, namespace: default}
+spec:
+  volumeSnapshotClassName: synology-iscsi
+  source:
+    persistentVolumeClaimName: snap-test
+EOF
+kubectl get volumesnapshot snap-test-1
+kubectl delete volumesnapshot snap-test-1
+kubectl delete pvc snap-test
+```
 
 ## Notes
 
 - `reclaimPolicy: Delete` — deleting a PVC deletes the backing LUN. Back up
-  before destructive changes (Velero / `pg_dump` CronJob is still open in the TODO).
-- `lunTemplate.type: BLUN` is thin-provisioned; switch to `BLUN_THICK` in the
-  Secret for thick provisioning.
+  before destructive changes (CNPG backups to Garage; see `apps/keycloak/keycloak.md`).
+- `lunTemplate.type: BLUN` is thin-provisioned; switch to `BLUN_THICK` in Vault
+  (or the example Secret) for thick provisioning.
