@@ -16,4 +16,6 @@ resources:
   - keycloak-cr.yaml
   - external-secret-db.yaml
   - external-secret-guacamole-db.yaml
+  - external-secret-backup-s3.yaml
+  - scheduled-backup.yaml
   - keycloak-realm-import-vcf.yaml

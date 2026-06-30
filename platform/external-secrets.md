@@ -43,6 +43,7 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/github/runners`          | `app_id`, `installation_id`, `private_key` | `ci/arc-github-app` |
 | `secret/data/argocd/git`              | `app_id`, `installation_id`, `private_key` | `argocd/argocd-image-updater-git-creds` |
 | `secret/data/democratic-csi/driver`   | `host`, `port`, `username`, `password`, `volume`, `target_portal` | `democratic-csi/democratic-csi-driver-config` |
+| `secret/data/cnpg/backup-s3`          | `endpoint_url`, `access_key_id`, `secret_access_key`, `bucket`, `region` | `keycloak/cnpg-backup-s3` |
 
 ## Populate Secrets (before first sync)
 
@@ -102,8 +103,13 @@ vault kv put secret/democratic-csi/driver \
   volume=/volume1 \
   target_portal=172.16.30.X
 
-
-## Verify
+vault kv put secret/cnpg/backup-s3 \
+  endpoint_url=https://garage.lab.mxe11.nl:3900 \
+  access_key_id=<garage-key> \
+  secret_access_key=<garage-secret> \
+  bucket=cnpg-backups \
+  region=garage
+```
 
 ```bash
 kubectl get clustersecretstore vault
