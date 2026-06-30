@@ -67,7 +67,8 @@ else
   warn "homelab AppProject missing"
 fi
 
-default_apps=$(kubectl -n argocd get applications -o jsonpath='{range .items[?(@.spec.project=="default")]}{.metadata.name}{"\n"}{end}' 2>/dev/null | grep -v '^root-app$' || true)
+default_apps=$(kubectl -n argocd get applications -o jsonpath='{range .items[?(@.spec.project=="default")]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
+  | grep -vE '^(root-app|homelab-appproject|root-platform)$' || true)
 if [[ -z "$default_apps" ]]; then
   ok "no Applications on project: default (except root-app)"
 else
