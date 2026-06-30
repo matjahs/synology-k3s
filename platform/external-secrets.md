@@ -36,11 +36,12 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/backstage/session`       | `secret`               | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/argocd`        | `token`                | `backstage/backstage-secrets`                           |
 | `secret/data/backstage/vault`         | `secret`               | `backstage/backstage-secrets` (`VAULT_STATIC_SECRET`)     |
-| `secret/data/backstage/nexus-docker`  | `username`, `password` | `backstage/nexus-docker-creds`                          |
+| `secret/data/backstage/nexus-docker`  | `username`, `password` | `backstage/nexus-docker-creds`, `argocd/argocd-image-updater-nexus-creds` |
 | `secret/data/grafana/admin`           | `user`, `password`     | `observability/grafana-admin`                           |
 | `secret/data/netbox/db`               | `username`, `password` | `netbox/netbox-db-app`                                  |
 | `secret/data/netbox/app`              | `secret_key`, `superuser_name`, `superuser_email`, `superuser_password` | `netbox/netbox-secrets` |
 | `secret/data/github/runners`          | `app_id`, `installation_id`, `private_key` | `ci/arc-github-app` |
+| `secret/data/argocd/git`              | `app_id`, `installation_id`, `private_key` | `argocd/argocd-image-updater-git-creds` |
 
 ## Populate Secrets (before first sync)
 
@@ -83,6 +84,11 @@ vault kv put secret/netbox/app \
   superuser_password=<strong-password>
 
 vault kv put secret/github/runners \
+  app_id=<github-app-id> \
+  installation_id=<github-app-installation-id> \
+  private_key=@/path/to/private-key.pem
+
+vault kv put secret/argocd/git \
   app_id=<github-app-id> \
   installation_id=<github-app-installation-id> \
   private_key=@/path/to/private-key.pem

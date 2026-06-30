@@ -1,0 +1,34 @@
+apiVersion: argocd-image-updater.argoproj.io/v1alpha1
+kind: ImageUpdater
+metadata:
+  name: lab-apps
+  namespace: argocd
+spec:
+  namespace: argocd
+  writeBackConfig:
+    method: git:secret:argocd/argocd-image-updater-git-creds
+    gitConfig:
+      repository: https://github.com/matjahs/synology-k3s.git
+      branch: main
+      writeBackTarget: kustomization
+      pullRequest:
+        github: {}
+  applicationRefs:
+    - namePattern: backstage
+      images:
+        - alias: backstage
+          imageName: nexus.lab.mxe11.nl/backstage/backstage
+          commonUpdateSettings:
+            updateStrategy: semver
+          manifestTargets:
+            kustomize:
+              name: nexus.lab.mxe11.nl/backstage/backstage
+    - namePattern: netbox
+      images:
+        - alias: netbox
+          imageName: ghcr.io/netbox-community/netbox
+          commonUpdateSettings:
+            updateStrategy: semver
+          manifestTargets:
+            kustomize:
+              name: ghcr.io/netbox-community/netbox
