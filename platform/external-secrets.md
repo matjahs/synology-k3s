@@ -42,6 +42,7 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/netbox/app`              | `secret_key`, `superuser_name`, `superuser_email`, `superuser_password` | `netbox/netbox-secrets` |
 | `secret/data/github/runners`          | `app_id`, `installation_id`, `private_key` | `ci/arc-github-app` |
 | `secret/data/argocd/git`              | `app_id`, `installation_id`, `private_key` | `argocd/argocd-image-updater-git-creds` |
+| `secret/data/democratic-csi/driver`   | `host`, `port`, `username`, `password`, `volume`, `target_portal` | `democratic-csi/democratic-csi-driver-config` |
 
 ## Populate Secrets (before first sync)
 
@@ -92,7 +93,15 @@ vault kv put secret/argocd/git \
   app_id=<github-app-id> \
   installation_id=<github-app-installation-id> \
   private_key=@/path/to/private-key.pem
-```
+
+vault kv put secret/democratic-csi/driver \
+  host=172.16.30.X \
+  port=5000 \
+  username=csi-user \
+  password=<dsm-password> \
+  volume=/volume1 \
+  target_portal=172.16.30.X
+
 
 ## Verify
 
