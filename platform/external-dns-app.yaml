@@ -9,7 +9,7 @@ metadata:
     # their LB IPs published in .status when it first syncs.
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  project: default
+  project: homelab
   source:
     repoURL: https://kubernetes-sigs.github.io/external-dns/
     chart: external-dns

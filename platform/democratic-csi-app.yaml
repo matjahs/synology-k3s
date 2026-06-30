@@ -9,7 +9,7 @@ metadata:
     # L2/Gateway networking (wave 0), only on a healthy node + CNI.
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  project: default
+  project: homelab
   source:
     repoURL: https://democratic-csi.github.io/charts/
     chart: democratic-csi
