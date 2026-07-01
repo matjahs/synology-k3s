@@ -47,11 +47,11 @@ Ordered by priority. See commit history for the bug-fix / restructure work alrea
       Alertmanager routes for failed syncs. _Later_
 - [ ] **Pod Security + policy engine.** Add `pod-security.kubernetes.io/enforce` labels
       on namespaces; consider Kyverno/Gatekeeper. _Later_
-- [X] **external-dns** managing `lab.mxe11.nl` records on the UniFi gateway
-      (`platform/external-dns-app.yaml`, chart `1.21.1` + kashalls UniFi webhook
-      `v0.8.2`). Source `gateway-httproute`, policy `sync`. API key applied
-      out-of-band (`external-dns-unifi-secret.example.yaml`). See `platform/external-dns.md`.
-      Publishes `keycloak` and `argocd` under `lab.mxe11.nl`.
+- [X] **NetBox DNS source of truth** for `lab.mxe11.nl` — `dns-netbox-sync` (HTTPRoute
+      → NetBox), `octodns-sync` (NetBox → UniFi). Argo app `platform/dns-app.yaml`.
+      Custom NetBox image from `matjahs/lab-netbox`. Vault: `secret/netbox/api`,
+      `secret/dns/unifi`. See `platform/dns.md`, `apps/netbox/netbox.md`.
+      Retired `platform/external-dns-app.yaml`.
 
 ## Tier 3 — repo hygiene
 

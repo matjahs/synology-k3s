@@ -40,6 +40,8 @@ vault write auth/kubernetes/role/external-secrets \
 | `secret/data/grafana/admin`           | `user`, `password`     | `observability/grafana-admin`                           |
 | `secret/data/netbox/db`               | `username`, `password` | `netbox/netbox-db-app`                                  |
 | `secret/data/netbox/app`              | `secret_key`, `superuser_name`, `superuser_email`, `superuser_password` | `netbox/netbox-secrets` |
+| `secret/data/netbox/api`              | `token`                | `netbox/netbox-api`, `dns/netbox-api`                   |
+| `secret/data/dns/unifi`               | `api_key`              | `dns/unifi-api`                                         |
 | `secret/data/github/runners`          | `app_id`, `installation_id`, `private_key` | `ci/arc-github-app` |
 | `secret/data/argocd/git`              | `app_id`, `installation_id`, `private_key` | `argocd/argocd-image-updater-git-creds` |
 | `secret/data/democratic-csi/driver`   | `host`, `port`, `username`, `password`, `volume`, `target_portal` | `democratic-csi/democratic-csi-driver-config` |
@@ -84,6 +86,12 @@ vault kv put secret/netbox/app \
   superuser_name=admin \
   superuser_email=admin@lab.mxe11.nl \
   superuser_password=<strong-password>
+
+vault kv put secret/netbox/api \
+  token=<netbox-api-token>
+
+vault kv put secret/dns/unifi \
+  api_key=<unifi-integration-api-key>
 
 vault kv put secret/github/runners \
   app_id=<github-app-id> \

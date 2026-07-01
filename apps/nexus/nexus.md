@@ -193,4 +193,4 @@ on the docker hosted repository.
 
 - Single replica with `Recreate` strategy and a 50Gi RWO PVC on `synology-iscsi`.
 - First startup can take 2–3 minutes; probes allow up to ~3 minutes before failing.
-- DNS for `nexus.lab.mxe11.nl` is managed automatically by external-dns from the HTTPRoute.
+- DNS for `nexus.lab.mxe11.nl` is managed via NetBox DNS (`platform/dns.md`).
