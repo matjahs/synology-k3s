@@ -18,6 +18,13 @@
       "matchStrings": ["GATEWAY_API_VERSION=\"(?<currentValue>.*?)\""],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "kubernetes-sigs/gateway-api"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^bootstrap-k8s-vm\\.sh$/"],
+      "matchStrings": ["INSTALL_K3S_VERSION=\"\\$\\{INSTALL_K3S_VERSION:-(?<currentValue>.*?)\\}\""],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "k3s-io/k3s"
     }
   ],
   "packageRules": [

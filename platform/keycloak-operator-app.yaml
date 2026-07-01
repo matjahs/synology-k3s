@@ -8,7 +8,7 @@ metadata:
     # must exist before the Keycloak CR (wave 1) is reconciled.
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  project: default
+  project: homelab
   # Sync the operator's release manifests straight from the upstream repo at a
   # pinned tag. The kubernetes/ dir holds exactly three files: the two CRDs and
   # kubernetes.yml (ServiceAccount + RBAC + operator Deployment + Service).

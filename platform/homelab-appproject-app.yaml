@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: homelab-appproject
+  namespace: argocd
+  annotations:
+    # Must exist before any Application uses project: homelab (e.g. argocd at -2).
+    argocd.argoproj.io/sync-wave: "-3"
+spec:
+  # Stays on default — homelab AppProject does not exist until this syncs.
+  project: default
+  source:
+    repoURL: https://github.com/matjahs/synology-k3s.git
+    targetRevision: HEAD
+    path: platform/appproject
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

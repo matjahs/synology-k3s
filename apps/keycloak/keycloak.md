@@ -51,6 +51,21 @@ Manifests:
 | [`postgres-cluster.yaml`](postgres-cluster.yaml) | `spec.backup.barmanObjectStore` |
 | [`scheduled-backup.yaml`](scheduled-backup.yaml) | Daily base backup (`immediate: true` on first sync) |
 
+### CNPG backups (Garage S3)
+
+Backups use `spec.backup.barmanObjectStore` + a daily `ScheduledBackup`. Populate
+Vault `secret/cnpg/backup-s3` first (see
+[`platform/external-secrets.md`](../../platform/external-secrets.md)).
+
+Ensure `endpointURL` and `destinationPath` in [`postgres-cluster.yaml`](postgres-cluster.yaml)
+match the Vault `endpoint_url` and `bucket` values.
+
+| File | Role |
+|------|------|
+| [`external-secret-backup-s3.yaml`](external-secret-backup-s3.yaml) | S3 credentials from Vault |
+| [`postgres-cluster.yaml`](postgres-cluster.yaml) | `spec.backup.barmanObjectStore` |
+| [`scheduled-backup.yaml`](scheduled-backup.yaml) | Daily base backup (`immediate: true` on first sync) |
+
 ### TLS / Let's Encrypt
 
 The `keycloak-tls` cert is issued by the cluster-wide `letsencrypt-prod`

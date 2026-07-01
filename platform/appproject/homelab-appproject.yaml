@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: homelab
+  namespace: argocd
+spec:
+  sourceRepos:
+    - https://github.com/matjahs/synology-k3s.git
+    - https://argoproj.github.io/argo-helm
+    - https://democratic-csi.github.io/charts/
+    - https://cloudnative-pg.github.io/charts
+    - https://kubernetes-sigs.github.io/external-dns/
+    - https://helm.cilium.io/
+    - https://charts.jetstack.io
+    - https://charts.external-secrets.io
+    - https://prometheus-community.github.io/helm-charts
+    - https://github.com/keycloak/keycloak-k8s-resources.git
+    - ghcr.io/actions/actions-runner-controller-charts
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: kube-system
+    - server: https://kubernetes.default.svc
+      namespace: democratic-csi
+    - server: https://kubernetes.default.svc
+      namespace: cert-manager
+    - server: https://kubernetes.default.svc
+      namespace: keycloak
+    - server: https://kubernetes.default.svc
+      namespace: cnpg-system
+    - server: https://kubernetes.default.svc
+      namespace: dns
+    - server: https://kubernetes.default.svc
+      namespace: external-secrets
+    - server: https://kubernetes.default.svc
+      namespace: observability
+    - server: https://kubernetes.default.svc
+      namespace: backstage
+    - server: https://kubernetes.default.svc
+      namespace: netbox
+    - server: https://kubernetes.default.svc
+      namespace: ci
+    - server: https://kubernetes.default.svc
+      namespace: tools
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'

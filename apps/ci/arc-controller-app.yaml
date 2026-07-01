@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
-  project: default
+  project: homelab
   source:
     # OCI Helm: repoURL is the registry path without oci://; chart is the artifact name.
     repoURL: ghcr.io/actions/actions-runner-controller-charts

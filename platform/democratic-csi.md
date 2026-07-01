@@ -12,16 +12,16 @@ per PersistentVolume, mounted `ReadWriteOnce`, with online expansion support.
 | StorageClass | `synology-iscsi` (**cluster default**)                                 |
 | Access mode  | `ReadWriteOnce` (block)                                                |
 | Expansion    | enabled                                                                |
-| Snapshots    | disabled (see below)                                                   |
+| Snapshots    | enabled (`external-snapshotter` + `synology-iscsi` VolumeSnapshotClass) |
 | Sync wave    | `-1` (before stateful apps)                                            |
 
-Defined in [`democratic-csi-app.yaml`](democratic-csi-app.yaml). All values are
-inlined there; the only secret material is the DSM connection, kept out of git.
+Defined in [`democratic-csi-app.yaml`](democratic-csi-app.yaml). DSM connection
+credentials are synced from Vault via ESO
+([`external-secret-democratic-csi.yaml`](external-secret-democratic-csi.yaml)).
 
 ## One-time setup
 
-The driver credentials live in a Secret applied **out-of-band** — the root
-Argo CD app only discovers `*-app.yaml`, so the Secret is never read from git.
+### DSM + iSCSI initiator
 
 1. **DSM** — create a dedicated user in the `administrators` group (LUN/target
    management needs admin on DSM 7), enable iSCSI, and note the volume
@@ -37,28 +37,23 @@ Argo CD app only discovers `*-app.yaml`, so the Secret is never read from git.
    echo iscsi_tcp | sudo tee /etc/modules-load.d/iscsi.conf
    ```
 
-3. **Secret** — fill in [`democratic-csi-secret.example.yaml`](democratic-csi-secret.example.yaml)
-   and apply it (the data key must stay `driver-config-file.yaml`):
+### Vault + ESO
 
-   ```bash
-   cp democratic-csi-secret.example.yaml /tmp/dcsi-secret.yaml
-   $EDITOR /tmp/dcsi-secret.yaml
-   kubectl create namespace democratic-csi --dry-run=client -o yaml | kubectl apply -f -
-   kubectl apply -f /tmp/dcsi-secret.yaml
-   shred -u /tmp/dcsi-secret.yaml
-   ```
+Populate `secret/democratic-csi/driver` in Vault (see
+[`external-secrets.md`](external-secrets.md)). ESO renders the
+`driver-config-file.yaml` key into `democratic-csi/democratic-csi-driver-config`.
 
-   The controller pod CrashLoops until this Secret exists — that's expected;
-   Argo CD self-heal recovers it once applied.
+The controller pod CrashLoops until the Secret exists — expected on first sync.
 
-> When the Tier-1 SOPS + age work lands, replace this manual step with a SOPS-
-> encrypted Secret in git and drop the `.example` file.
+[`democratic-csi-secret.example.yaml`](democratic-csi-secret.example.yaml) remains
+as a reference for the Secret shape; prefer Vault/ESO over manual `kubectl apply`.
 
 ## Verify
 
 ```bash
 kubectl get pods -n democratic-csi
 kubectl get storageclass            # synology-iscsi should be (default)
+kubectl get externalsecret -n democratic-csi democratic-csi-driver-config
 
 kubectl apply -f - <<'EOF'
 apiVersion: v1
@@ -72,19 +67,39 @@ kubectl get pvc test-claim          # should reach Bound; a LUN appears in DSM
 kubectl delete pvc test-claim
 ```
 
-## Enabling snapshots later
+## Volume snapshots
 
-Snapshots need cluster-wide CRDs + a controller that this cluster doesn't have
-yet. To enable:
+[`external-snapshotter-app.yaml`](external-snapshotter-app.yaml) installs the
+`snapshot-controller` chart (`0.3.0`) at sync-wave `-2`. democratic-csi enables
+`externalSnapshotter` and a `synology-iscsi` VolumeSnapshotClass.
 
-1. Install the [external-snapshotter](https://github.com/kubernetes-csi/external-snapshotter)
-   CRDs (`VolumeSnapshot*`) and `snapshot-controller` (its own Argo CD app).
-2. In `democratic-csi-app.yaml` set `controller.externalSnapshotter.enabled: true`
-   and add a `volumeSnapshotClasses` entry.
+Smoke-test on a disposable PVC:
+
+```bash
+kubectl apply -f - <<'EOF'
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: snap-test, namespace: default}
+spec:
+  accessModes: [ReadWriteOnce]
+  resources: {requests: {storage: 1Gi}}
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata: {name: snap-test-1, namespace: default}
+spec:
+  volumeSnapshotClassName: synology-iscsi
+  source:
+    persistentVolumeClaimName: snap-test
+EOF
+kubectl get volumesnapshot snap-test-1
+kubectl delete volumesnapshot snap-test-1
+kubectl delete pvc snap-test
+```
 
 ## Notes
 
 - `reclaimPolicy: Delete` — deleting a PVC deletes the backing LUN. Back up
-  before destructive changes (Velero / `pg_dump` CronJob is still open in the TODO).
-- `lunTemplate.type: BLUN` is thin-provisioned; switch to `BLUN_THICK` in the
-  Secret for thick provisioning.
+  before destructive changes (CNPG backups to Garage; see `apps/keycloak/keycloak.md`).
+- `lunTemplate.type: BLUN` is thin-provisioned; switch to `BLUN_THICK` in Vault
+  (or the example Secret) for thick provisioning.

@@ -9,16 +9,15 @@ metadata:
     # L2/Gateway networking (wave 0), only on a healthy node + CNI.
     argocd.argoproj.io/sync-wave: "-1"
 spec:
-  project: default
+  project: homelab
   source:
     repoURL: https://democratic-csi.github.io/charts/
     chart: democratic-csi
     targetRevision: 0.15.1
     helm:
       # All values are inlined (matching cilium / cert-manager). The only
-      # secret material — DSM host + credentials — lives in the
-      # `democratic-csi-driver-config` Secret applied out-of-band (see
-      # democratic-csi-secret.example.yaml), NOT in this file.
+      # secret material — DSM host + credentials — is synced from Vault via ESO
+      # (platform/external-secret-democratic-csi.yaml), NOT in this file.
       values: |
         csiDriver:
           name: org.democratic-csi.synology-iscsi
@@ -35,11 +34,14 @@ spec:
               fsType: ext4
             mountOptions: []
 
-        # Snapshots are intentionally OFF: VolumeSnapshotClass + working
-        # snapshots require the cluster-wide external-snapshotter CRDs and a
-        # snapshot-controller, which are not installed in this cluster yet.
-        # See democratic-csi.md ("Enabling snapshots") to turn this on later.
-        volumeSnapshotClasses: []
+        # Requires external-snapshotter-app.yaml (sync-wave -2) for CRDs +
+        # snapshot-controller before this chart syncs.
+        volumeSnapshotClasses:
+          - name: synology-iscsi
+            defaultClass: true
+            deletionPolicy: Delete
+            parameters:
+              fsType: ext4
 
         controller:
           enabled: true
@@ -47,7 +49,7 @@ spec:
             # Online PVC expansion (pairs with allowVolumeExpansion above).
             enabled: true
           externalSnapshotter:
-            enabled: false
+            enabled: true
 
         node:
           enabled: true
@@ -70,8 +72,8 @@ spec:
                 value: /usr/sbin/iscsiadm
 
         driver:
-          # Credentials are supplied out-of-band via this Secret (key
-          # `driver-config-file.yaml`); nothing sensitive is committed.
+          # Credentials from ESO (democratic-csi-driver-config Secret); nothing
+          # sensitive is committed.
           existingConfigSecret: democratic-csi-driver-config
           config:
             # Required even when existingConfigSecret is set — the chart reads

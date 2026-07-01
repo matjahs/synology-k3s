@@ -27,7 +27,7 @@ spec:
               done
       containers:
         - name: netbox-worker
-          image: ghcr.io/netbox-community/netbox:v4.4-3.4.1
+          image: nexus.lab.mxe11.nl/netbox/netbox:1.0.6
           imagePullPolicy: IfNotPresent
           command:
             - /opt/netbox/venv/bin/python

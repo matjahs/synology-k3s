@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-snapshotter
+  namespace: argocd
+  annotations:
+    # VolumeSnapshot CRDs + controller must exist before democratic-csi enables
+    # externalSnapshotter (sync-wave -1).
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  project: homelab
+  source:
+    repoURL: https://democratic-csi.github.io/charts/
+    chart: snapshot-controller
+    targetRevision: 0.3.0
+    helm:
+      values: |
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
