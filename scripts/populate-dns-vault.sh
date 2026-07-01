@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # One-time Vault paths for NetBox DNS source of truth.
+# Requires: vault CLI authenticated to https://vault.mxe11.nl:8200
 set -euo pipefail
+
+: "${VAULT_ADDR:=https://vault.mxe11.nl:8200}"
+
+echo "Using VAULT_ADDR=${VAULT_ADDR}"
+vault status >/dev/null
 
 echo "Populate NetBox API token (create in NetBox UI: Admin → API tokens, write enabled):"
 read -r -s -p "NetBox API token: " NETBOX_TOKEN
