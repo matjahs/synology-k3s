@@ -45,8 +45,10 @@ export NETBOX_TOKEN=$(vault kv get -field=token secret/netbox/api)
 ./scripts/seed-netbox-homelab.sh --import-community-device-types
 ```
 
-Creates site, prefixes, physical devices, k3s/ESXi VMs, static DNS A records,
-and the external-gateway VIP. With `--import-community-device-types`, exact
+Creates site, RIR/aggregate, VLAN groups, VRFs, ASNs, VLANs, prefixes, IP ranges,
+all basic `* Types` objects (device, rack, module, cluster, circuit, virtual
+circuit), physical devices, k3s/ESXi VMs, VCF nested management IPs, static DNS
+A records, and the external-gateway VIP. With `--import-community-device-types`, exact
 matches from `netbox-community/devicetype-library` are imported first (currently
 UCG-Fiber and MikroTik CRS310); local fallbacks remain for models missing from
 the library (Synology DS723+ and Dell PowerEdge T550). HTTPRoute hostnames stay
@@ -66,6 +68,25 @@ export UCG_SSH_PASS='…'
 ```
 
 Merge discovery output into `scripts/netbox-homelab-data.yaml`, then seed.
+
+### IPAM model
+
+| Layer | NetBox objects | Notes |
+|-------|----------------|-------|
+| Foundation | RIR `RFC1918`, aggregate `172.16.0.0/12`, site `lab` | Private address hierarchy |
+| Physical edge | VLAN group `physical-edge`, VLANs 1/10/20/30/50/100/200/300 | UCG + MikroTik |
+| Nested VCF | VRF `vcf-nested`, VLAN group `vcf-nested`, prefixes `10.1.x.x` | Reachable only via holorouter `172.16.30.12` |
+| BGP | ASNs 65000–65002 on holorouter | Documented in seed data |
+| VIP pool | IP range `172.16.30.240`–`247` | Cilium external-gateway |
+
+**VLAN 10 naming:** physical UCG VLAN 10 (`172.16.10.0/24`) and nested VCF management (`10.1.1.0/24`) both use “VLAN 10” in different contexts. NetBox separates them via VLAN groups and VRF — physical VLAN 10 is in `physical-edge`; nested `10.1.1.0/24` is in VRF `vcf-nested` with no physical VLAN binding.
+
+Import `site-a.vcf.lab` DNS and Infoblox networks:
+
+```bash
+export INFOBLOX_PASSWORD='…'
+./scripts/import-infoblox-to-netbox.py
+```
 
 ## Vault (required before first sync)
 

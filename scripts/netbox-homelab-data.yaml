@@ -23,47 +23,101 @@ tags:
   - lab
   - gitops
 
+rir:
+  name: RFC1918
+  slug: rfc1918
+  is_private: true
+
+aggregates:
+  - prefix: 172.16.0.0/12
+    rir: rfc1918
+    description: Homelab private supernet
+
+vlan_groups:
+  - name: Physical Edge
+    slug: physical-edge
+    description: UCG and MikroTik VLANs on the physical LAN
+  - name: VCF Nested
+    slug: vcf-nested
+    description: Virtual VCF/Holodeck — reachable only via holorouter 172.16.30.12
+
+vrfs:
+  - name: VCF Nested
+    slug: vcf-nested
+    description: Virtual VCF/Holodeck address space — UCG routes 10.1.0.0/20 via holorouter 172.16.30.12
+
+asns:
+  - asn: 65000
+    description: HoloRouter (local ASN)
+    device: holorouter.lab.mxe11.nl
+  - asn: 65001
+    description: Management edge (BGP peer on holorouter)
+    device: holorouter.lab.mxe11.nl
+  - asn: 65002
+    description: Workload edge (BGP peer on holorouter)
+    device: holorouter.lab.mxe11.nl
+
+ip_ranges:
+  - start: 172.16.30.240
+    end: 172.16.30.247
+    description: Cilium L2 LB VIP pool (external-gateway)
+
 # VLAN IDs: UCG (ssh root@172.16.0.1), MikroTik bridge1 (ssh admin@172.16.0.2), ESXi portgroups.
+# Physical VLAN 10 (172.16.10.0/24) is NOT the same as nested VCF mgmt (10.1.1.0/24 in VRF vcf-nested).
 vlans:
   - vid: 1
     slug: vlan1-lan
     name: lan
+    vlan_group: physical-edge
     description: Untagged on MikroTik bridge1; UCG br0 172.16.0.1/24 (switch0.1)
     status: active
   - vid: 10
     slug: vlan10
     name: vlan10
-    description: UCG br10 172.16.10.1/24 (switch0.10) — not trunked on MikroTik bridge1
+    vlan_group: physical-edge
+    description: Physical UCG br10 172.16.10.1/24 (switch0.10) — not trunked on MikroTik bridge1
     status: active
   - vid: 20
     slug: vlan20
     name: vlan20
+    vlan_group: physical-edge
     description: UCG br20 172.16.13.1/24 (switch0.20) — subnet .13.x, not on MikroTik
     status: active
   - vid: 30
     slug: vlan30-servers
     name: servers
+    vlan_group: physical-edge
     description: UCG br30 172.16.30.1/24 (switch0.30); tagged on MikroTik bridge1
     status: active
   - vid: 50
     slug: vlan50-storage
     name: storage
+    vlan_group: physical-edge
     description: UCG switch0.50 + MikroTik STORAGE trunk (SFP+, ether7); 172.16.50.0/24
     status: active
   - vid: 100
     slug: vlan100-vcf
     name: vcf
+    vlan_group: physical-edge
     description: UCG switch0.100 trunk; MikroTik vlan100-ingress 192.168.100.1/24
     status: active
   - vid: 200
     slug: vlan200
     name: vlan200
-    description: MikroTik bridge1 only (ether8, SFP+) — not defined on UCG switch0
+    vlan_group: physical-edge
+    description: MikroTik bridge1 only (ether8, SFP+) — trunk-only, no L3 prefix
     status: active
   - vid: 300
     slug: vlan300-wan
     name: wan
+    vlan_group: physical-edge
     description: UCG WAN — eth4.300 95.99.12.24/22 (ISP)
+    status: active
+  - vid: 24
+    slug: vlan24-holodeck
+    name: holodeck-dtgw
+    vlan_group: vcf-nested
+    description: Holodeck DTGW — logical VLAN inside nested VCF (10.1.8.128/25)
     status: active
 
 prefixes:
@@ -74,7 +128,7 @@ prefixes:
   - prefix: 172.16.10.0/24
     vlan: vlan10
     status: active
-    description: VLAN 10 — UCG gateway 172.16.10.1
+    description: Physical VLAN 10 — UCG gateway 172.16.10.1
   - prefix: 172.16.13.0/24
     vlan: vlan20
     status: active
@@ -99,14 +153,28 @@ prefixes:
     vlan: vlan100-vcf
     status: active
     description: VCF ingress — MikroTik vlan100-ingress gateway 192.168.100.1
-  - prefix: 10.1.0.0/20
-    vlan: vlan100-vcf
-    status: active
-    description: VCF site-a nested mgmt — UCG static route via holorouter 172.16.30.12
   - prefix: 95.99.12.0/22
     vlan: vlan300-wan
     status: active
     description: UCG WAN public block — eth4.300 (dynamic 95.99.12.24)
+  # VCF nested — VRF vcf-nested (no physical VLAN on edge)
+  - prefix: 10.1.0.0/20
+    vrf: vcf-nested
+    status: active
+    description: VCF site-a supernet — UCG static route via holorouter 172.16.30.12
+  - prefix: 10.1.1.0/24
+    vrf: vcf-nested
+    status: active
+    description: Nested VCF management plane (site-a) — logical VLAN 10 inside VCF, not physical UCG VLAN 10
+  - prefix: 10.1.0.0/24
+    vrf: vcf-nested
+    status: active
+    description: Holodeck VPC-External-Block-a — gateway 10.1.0.1
+  - prefix: 10.1.8.128/25
+    vrf: vcf-nested
+    vlan: vlan24-holodeck
+    status: active
+    description: Holodeck DTGW configuration — gateway 10.1.8.129
 
 # UCG switch0 VLANs: 1, 10, 20, 30, 50, 100. MikroTik-only VLAN 200. Disabled on MikroTik: 40, 60, 70, 80-81, 99, 199
 
@@ -207,6 +275,52 @@ cluster_types:
   - name: VMware ESXi
     slug: vmware-esxi
 
+rack_types:
+  - manufacturer: Generic
+    model: Open 4-Post Frame
+    slug: generic-4post-frame
+    form_factor: 4-post-frame
+    u_height: 42
+    description: Standard open frame for homelab gear
+  - manufacturer: Generic
+    model: 12U Wall Cabinet
+    slug: generic-12u-wall-cabinet
+    form_factor: wall-cabinet
+    u_height: 12
+    description: Wall-mounted cabinet for shallow network gear
+
+module_types:
+  - manufacturer: Generic
+    model: Blank Panel
+    description: Placeholder module for empty module bays
+
+circuit_types:
+  - name: Internet
+    slug: internet
+    color: 2196f3
+    description: ISP or transit Internet circuit
+  - name: Out-of-Band
+    slug: out-of-band
+    color: ff9800
+    description: Management or OOB connectivity
+  - name: Peering
+    slug: peering
+    color: 9c27b0
+  - name: Private Backhaul
+    slug: private-backhaul
+    color: 607d8b
+
+virtual_circuit_types:
+  - name: Site-to-Site VPN
+    slug: site-to-site-vpn
+    color: 4caf50
+  - name: EVPN
+    slug: evpn
+    color: 795548
+  - name: SD-WAN Overlay
+    slug: sd-wan-overlay
+    color: 00bcd4
+
 clusters:
   - name: homelab-k3s
     slug: homelab-k3s
@@ -283,10 +397,11 @@ virtual_machines:
     primary_ip4: 172.16.30.12/24
     vcpus: 4
     memory_mb: 16384
-    description: ESXi vm 69 — VCF edge router; UCG routes 10.1.0.0/20 here (172.16.30.12)
+    description: ESXi vm 69 — VCF edge router; UCG routes 10.1.0.0/20 here; BGP AS 65000
     hosted_on: esx
     esxi_vmid: 69
     esxi_name: holorouter-9.0.2.0424
+    asns: [65000, 65001, 65002]
 
   # --- ESXi inventory without guest IP (offline / no VMware Tools) ---
   - name: vcf-esx-01a
@@ -425,6 +540,9 @@ devices:
       - address: 172.16.50.99/24
         interface: vmk2
         description: ESXi vmk2 — VLAN 50 NFS/storage
+      - address: 172.16.30.10/24
+        interface: idrac
+        description: iDRAC out-of-band management (idrac.lab.mxe11.nl)
 
   - name: vault-pi
     device_type: rpi-5
@@ -438,6 +556,42 @@ service_ips:
   - address: 172.16.30.240/32
     dns_name: external-gateway.lab.mxe11.nl
     description: Cilium L2 VIP — external-gateway (HTTPS ingress for lab apps)
+
+# VCF nested management IPs (VRF vcf-nested) — DNS in site-a.vcf.lab via Infoblox import
+vcf_management_ips:
+  - address: 10.1.1.1/24
+    dns_name: dns.site-a.vcf.lab
+    description: Holo-Router DNS inside nested VCF
+  - address: 10.1.1.10/24
+    dns_name: vc-mgmt-a.site-a.vcf.lab
+    description: vCenter Server
+  - address: 10.1.1.20/24
+    dns_name: nsx-mgmt-a.site-a.vcf.lab
+    description: NSX Manager cluster VIP
+  - address: 10.1.1.30/24
+    dns_name: ops-a.site-a.vcf.lab
+    description: VCF Operations
+  - address: 10.1.1.60/24
+    dns_name: opsnet-01a.site-a.vcf.lab
+    description: VCF Operations for Networks
+  - address: 10.1.1.70/24
+    dns_name: auto-a.site-a.vcf.lab
+    description: VCF Automation
+  - address: 10.1.1.90/24
+    dns_name: alb-a.site-a.vcf.lab
+    description: Avi Load Balancer
+  - address: 10.1.1.101/24
+    dns_name: esx-01a.site-a.vcf.lab
+    description: Nested ESXi 01
+  - address: 10.1.1.102/24
+    dns_name: esx-02a.site-a.vcf.lab
+    description: Nested ESXi 02
+  - address: 10.1.1.103/24
+    dns_name: esx-03a.site-a.vcf.lab
+    description: Nested ESXi 03
+  - address: 10.1.1.104/24
+    dns_name: esx-04a.site-a.vcf.lab
+    description: Nested ESXi 04
 
 dns_zone: lab.mxe11.nl
 dns_records:
@@ -456,6 +610,11 @@ dns_records:
     value: 172.16.30.11
     ttl: 300
     description: ESXi hypervisor (Dell T550)
+  - name: idrac
+    type: A
+    value: 172.16.30.10
+    ttl: 300
+    description: iDRAC out-of-band management (Dell T550)
   - name: garage
     type: A
     value: 172.16.30.21

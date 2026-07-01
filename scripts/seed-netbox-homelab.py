@@ -46,7 +46,7 @@ def collect_missing(data: dict[str, Any], path: str = "") -> list[str]:
     if isinstance(data, dict):
         for key, value in data.items():
             child = f"{path}.{key}" if path else key
-            if key in ("comments", "description", "k8s_services", "k8s_role"):
+            if key in ("comments", "description", "k8s_services", "k8s_role", "asns", "device"):
                 continue
             if key == "primary_ip4" and value is None:
                 missing.append(child)
@@ -214,6 +214,89 @@ def seed_device_roles(nb: NetBoxClient, data: dict[str, Any]) -> dict[str, int]:
     return ids
 
 
+def seed_slug_named_types(
+    nb: NetBoxClient,
+    data: dict[str, Any],
+    key: str,
+    api_path: str,
+) -> dict[str, int]:
+    ids: dict[str, int] = {}
+    for item in data.get(key, []):
+        payload: dict[str, Any] = {
+            "name": item["name"],
+            "slug": item["slug"],
+        }
+        if item.get("color"):
+            payload["color"] = item["color"]
+        if item.get("description"):
+            payload["description"] = item["description"]
+        obj = nb.ensure(api_path, {"slug": item["slug"]}, payload)
+        ids[item["slug"]] = int(obj["id"])
+    return ids
+
+
+def seed_rack_types(
+    nb: NetBoxClient,
+    data: dict[str, Any],
+    manufacturer_ids: dict[str, int],
+) -> dict[str, int]:
+    ids: dict[str, int] = {}
+    optional_keys = (
+        "description",
+        "width",
+        "u_height",
+        "starting_unit",
+        "desc_units",
+        "outer_width",
+        "outer_height",
+        "outer_depth",
+        "outer_unit",
+        "mounting_depth",
+        "weight",
+        "max_weight",
+        "weight_unit",
+    )
+    for rt in data.get("rack_types", []):
+        payload: dict[str, Any] = {
+            "manufacturer": manufacturer_ids[rt["manufacturer"]],
+            "model": rt["model"],
+            "slug": rt["slug"],
+            "form_factor": rt["form_factor"],
+        }
+        for key in optional_keys:
+            if key in rt:
+                payload[key] = rt[key]
+        obj = nb.ensure("/api/dcim/rack-types/", {"slug": rt["slug"]}, payload)
+        ids[rt["slug"]] = int(obj["id"])
+    return ids
+
+
+def seed_module_types(
+    nb: NetBoxClient,
+    data: dict[str, Any],
+    manufacturer_ids: dict[str, int],
+) -> dict[str, int]:
+    ids: dict[str, int] = {}
+    optional_keys = ("part_number", "description", "weight", "weight_unit", "airflow")
+    for mt in data.get("module_types", []):
+        mfr_id = manufacturer_ids[mt["manufacturer"]]
+        payload: dict[str, Any] = {
+            "manufacturer": mfr_id,
+            "model": mt["model"],
+        }
+        for key in optional_keys:
+            if key in mt:
+                payload[key] = mt[key]
+        obj = nb.ensure(
+            "/api/dcim/module-types/",
+            {"manufacturer_id": mfr_id, "model": mt["model"]},
+            payload,
+            label=f"{mt['manufacturer']} {mt['model']}",
+        )
+        ids[mt["model"]] = int(obj["id"])
+    return ids
+
+
 def import_component_templates(
     nb: NetBoxClient,
     device_type_id: int,
@@ -261,6 +344,26 @@ def import_component_templates(
     nb._cache.clear()
 
 
+def find_device_type(
+    nb: NetBoxClient,
+    *,
+    slug: str | None = None,
+    manufacturer_id: int | None = None,
+    model: str | None = None,
+) -> dict[str, Any] | None:
+    if slug:
+        existing = nb.find_one("/api/dcim/device-types/", slug=slug)
+        if existing:
+            return existing
+    if manufacturer_id is not None and model:
+        return nb.find_one(
+            "/api/dcim/device-types/",
+            manufacturer_id=manufacturer_id,
+            model=model,
+        )
+    return None
+
+
 def import_community_device_types(
     nb: NetBoxClient,
     data: dict[str, Any],
@@ -270,7 +373,7 @@ def import_community_device_types(
     for entry in data.get("community_device_types", []):
         alias = entry["alias"]
         slug = entry["slug"]
-        existing = nb.find_one("/api/dcim/device-types/", slug=slug)
+        existing = find_device_type(nb, slug=slug)
         if existing:
             print(f"  exists community:{slug}")
             ids[alias] = int(existing["id"])
@@ -284,6 +387,7 @@ def import_community_device_types(
         with urllib.request.urlopen(entry["url"], timeout=60) as response:
             library_type = yaml.safe_load(response.read().decode())
         manufacturer = library_type["manufacturer"]
+        model = library_type["model"]
         if manufacturer not in manufacturer_ids:
             slugified = manufacturer.lower().replace(" ", "-")
             obj = nb.ensure(
@@ -292,6 +396,15 @@ def import_community_device_types(
                 {"name": manufacturer, "slug": slugified},
             )
             manufacturer_ids[manufacturer] = int(obj["id"])
+        mfr_id = manufacturer_ids[manufacturer]
+        existing = find_device_type(nb, manufacturer_id=mfr_id, model=model)
+        if existing:
+            device_type_id = int(existing["id"])
+            print(f"  exists community:{slug} (manufacturer/model as {existing['slug']})")
+            import_component_templates(nb, device_type_id, library_type)
+            ids[alias] = device_type_id
+            ids[slug] = device_type_id
+            continue
         payload_keys = {
             "model",
             "slug",
@@ -304,15 +417,12 @@ def import_community_device_types(
             "comments",
         }
         payload = {
-            "manufacturer": manufacturer_ids[manufacturer],
+            "manufacturer": mfr_id,
             **{k: v for k, v in library_type.items() if k in payload_keys and v is not None},
         }
-        obj = nb.ensure(
-            "/api/dcim/device-types/",
-            {"slug": slug},
-            payload,
-            label=f"community:{slug}",
-        )
+        obj = nb._request("POST", "/api/dcim/device-types/", body=payload)
+        print(f"  created: community:{slug}")
+        nb._cache.clear()
         device_type_id = int(obj["id"])
         import_component_templates(nb, device_type_id, library_type)
         ids[alias] = device_type_id
@@ -335,6 +445,16 @@ def seed_device_types(
             print(f"  using community:{library_slug} as {dt['slug']}")
             continue
         mfr_id = manufacturer_ids[dt["manufacturer"]]
+        existing = find_device_type(
+            nb,
+            slug=dt["slug"],
+            manufacturer_id=mfr_id,
+            model=dt["model"],
+        )
+        if existing:
+            print(f"  exists: {dt['slug']}")
+            ids[dt["slug"]] = int(existing["id"])
+            continue
         payload = {
             "manufacturer": mfr_id,
             "model": dt["model"],
@@ -343,7 +463,9 @@ def seed_device_types(
             "is_full_depth": dt.get("is_full_depth", False),
             "comments": dt.get("comments", ""),
         }
-        obj = nb.ensure("/api/dcim/device-types/", {"slug": dt["slug"]}, payload)
+        obj = nb._request("POST", "/api/dcim/device-types/", body=payload)
+        print(f"  created: {dt['slug']}")
+        nb._cache.clear()
         ids[dt["slug"]] = int(obj["id"])
     return ids
 
@@ -351,32 +473,166 @@ def seed_device_types(
 def seed_platforms(nb: NetBoxClient, data: dict[str, Any]) -> dict[str, int]:
     ids: dict[str, int] = {}
     for platform in data.get("platforms", []):
-        obj = nb.ensure(
+        existing = nb.find_one("/api/dcim/platforms/", slug=platform["slug"])
+        if not existing:
+            existing = nb.find_one("/api/dcim/platforms/", name=platform["name"])
+        if existing:
+            print(f"  exists: {platform['name']}")
+            ids[platform["slug"]] = int(existing["id"])
+            continue
+        obj = nb._request(
+            "POST",
             "/api/dcim/platforms/",
-            {"slug": platform["slug"]},
-            {"name": platform["name"], "slug": platform["slug"]},
+            body={"name": platform["name"], "slug": platform["slug"]},
         )
+        print(f"  created: {platform['name']}")
+        nb._cache.clear()
         ids[platform["slug"]] = int(obj["id"])
     return ids
 
 
-def seed_vlans(nb: NetBoxClient, data: dict[str, Any], site_id: int) -> dict[str, int]:
+def seed_rir(nb: NetBoxClient, data: dict[str, Any]) -> int | None:
+    rir = data.get("rir")
+    if not rir:
+        return None
+    payload: dict[str, Any] = {
+        "name": rir["name"],
+        "slug": rir["slug"],
+        "is_private": rir.get("is_private", True),
+    }
+    obj = nb.ensure("/api/ipam/rirs/", {"slug": rir["slug"]}, payload)
+    return int(obj["id"])
+
+
+def seed_aggregates(
+    nb: NetBoxClient,
+    data: dict[str, Any],
+    rir_id: int | None,
+) -> None:
+    if not rir_id:
+        return
+    for aggregate in data.get("aggregates", []):
+        cidr = aggregate["prefix"]
+        payload: dict[str, Any] = {
+            "prefix": cidr,
+            "rir": rir_id,
+            "description": aggregate.get("description", ""),
+        }
+        nb.ensure(
+            "/api/ipam/aggregates/",
+            {"prefix": cidr},
+            payload,
+            label=f"aggregate:{cidr}",
+        )
+
+
+def seed_vlan_groups(nb: NetBoxClient, data: dict[str, Any]) -> dict[str, int]:
+    ids: dict[str, int] = {}
+    for group in data.get("vlan_groups", []):
+        payload: dict[str, Any] = {
+            "name": group["name"],
+            "slug": group["slug"],
+            "description": group.get("description", ""),
+        }
+        obj = nb.ensure(
+            "/api/ipam/vlan-groups/",
+            {"slug": group["slug"]},
+            payload,
+            label=f"vlan-group:{group['slug']}",
+        )
+        ids[group["slug"]] = int(obj["id"])
+    return ids
+
+
+def seed_vrfs(nb: NetBoxClient, data: dict[str, Any]) -> dict[str, int]:
+    ids: dict[str, int] = {}
+    for vrf in data.get("vrfs", []):
+        payload: dict[str, Any] = {
+            "name": vrf["name"],
+            "slug": vrf["slug"],
+            "description": vrf.get("description", ""),
+        }
+        obj = nb.ensure(
+            "/api/ipam/vrfs/",
+            {"slug": vrf["slug"]},
+            payload,
+            label=f"vrf:{vrf['slug']}",
+        )
+        ids[vrf["slug"]] = int(obj["id"])
+    return ids
+
+
+def seed_asns(
+    nb: NetBoxClient,
+    data: dict[str, Any],
+    rir_id: int | None,
+    site_id: int,
+) -> dict[int, int]:
+    ids: dict[int, int] = {}
+    if not rir_id:
+        return ids
+    for entry in data.get("asns", []):
+        asn = int(entry["asn"])
+        payload: dict[str, Any] = {
+            "asn": asn,
+            "rir": rir_id,
+            "site": site_id,
+            "description": entry.get("description", ""),
+        }
+        obj = nb.ensure(
+            "/api/ipam/asns/",
+            {"asn": asn},
+            payload,
+            label=f"asn:{asn}",
+        )
+        ids[asn] = int(obj["id"])
+    return ids
+
+
+def find_prefix(nb: NetBoxClient, cidr: str, vrf_id: int | None) -> dict[str, Any] | None:
+    params: dict[str, Any] = {"prefix": cidr}
+    if vrf_id is not None:
+        params["vrf_id"] = vrf_id
+    else:
+        params["vrf_id"] = "null"
+    return nb.find_one("/api/ipam/prefixes/", **params)
+
+
+def seed_vlans(
+    nb: NetBoxClient,
+    data: dict[str, Any],
+    site_id: int,
+    vlan_group_ids: dict[str, int],
+) -> dict[str, int]:
     ids: dict[str, int] = {}
     for vlan in data.get("vlans", []):
         if is_missing(vlan.get("vid")):
             print("  skip vlan (no vid configured)")
             continue
         vid = int(vlan["vid"])
-        payload = {
+        payload: dict[str, Any] = {
             "vid": vid,
             "name": vlan["name"],
             "status": vlan.get("status", "active"),
             "site": site_id,
             "description": vlan.get("description", ""),
         }
+        group_slug = vlan.get("vlan_group")
+        if group_slug and group_slug in vlan_group_ids:
+            payload["group"] = vlan_group_ids[group_slug]
         obj = nb.ensure("/api/ipam/vlans/", {"vid": vid, "site_id": site_id}, payload)
         slug = vlan.get("slug") or f"vlan{vid}"
         ids[slug] = int(obj["id"])
+        if not nb.dry_run and int(obj.get("id", 0)):
+            updates: dict[str, Any] = {}
+            if group_slug and group_slug in vlan_group_ids:
+                current_group = obj.get("group")
+                current_group_id = current_group.get("id") if isinstance(current_group, dict) else current_group
+                if current_group_id != vlan_group_ids[group_slug]:
+                    updates["group"] = vlan_group_ids[group_slug]
+            if updates:
+                nb._request("PATCH", f"/api/ipam/vlans/{obj['id']}/", body=updates)
+                print(f"  updated vlan:{slug}")
     return ids
 
 
@@ -385,22 +641,112 @@ def seed_prefixes(
     data: dict[str, Any],
     site_id: int,
     vlan_ids: dict[str, int],
+    vrf_ids: dict[str, int],
 ) -> dict[str, int]:
     ids: dict[str, int] = {}
     for prefix in data.get("prefixes", []):
         cidr = prefix["prefix"]
+        vrf_slug = prefix.get("vrf")
+        vrf_id = vrf_ids.get(vrf_slug) if vrf_slug else None
         payload: dict[str, Any] = {
             "prefix": cidr,
             "status": prefix.get("status", "active"),
             "site": site_id,
             "description": prefix.get("description", ""),
         }
+        if vrf_id is not None:
+            payload["vrf"] = vrf_id
         vlan_slug = prefix.get("vlan")
         if vlan_slug and vlan_slug in vlan_ids:
             payload["vlan"] = vlan_ids[vlan_slug]
-        obj = nb.ensure("/api/ipam/prefixes/", {"prefix": cidr}, payload, label=f"prefix:{cidr}")
+        existing = find_prefix(nb, cidr, vrf_id)
+        if not existing and vrf_id is not None:
+            existing = find_prefix(nb, cidr, None)
+        if existing:
+            print(f"  exists: prefix:{cidr}")
+            ids[cidr] = int(existing["id"])
+            if not nb.dry_run:
+                updates: dict[str, Any] = {}
+                current_vrf = existing.get("vrf")
+                current_vrf_id = current_vrf.get("id") if isinstance(current_vrf, dict) else current_vrf
+                if vrf_id != current_vrf_id:
+                    updates["vrf"] = vrf_id
+                if vlan_slug and vlan_slug in vlan_ids:
+                    current_vlan = existing.get("vlan")
+                    current_vlan_id = current_vlan.get("id") if isinstance(current_vlan, dict) else current_vlan
+                    if vlan_ids[vlan_slug] != current_vlan_id:
+                        updates["vlan"] = vlan_ids[vlan_slug]
+                elif existing.get("vlan") and not vlan_slug:
+                    updates["vlan"] = None
+                if existing.get("description") != payload["description"] and payload["description"]:
+                    updates["description"] = payload["description"]
+                if updates:
+                    nb._request("PATCH", f"/api/ipam/prefixes/{existing['id']}/", body=updates)
+                    print(f"  updated prefix:{cidr}")
+            continue
+        if nb.dry_run:
+            print(f"DRY-RUN POST /api/ipam/prefixes/: {json.dumps(payload)[:300]}")
+            ids[cidr] = 0
+            continue
+        obj = nb._request("POST", "/api/ipam/prefixes/", body=payload)
+        print(f"  created: prefix:{cidr}")
+        nb._cache.clear()
         ids[cidr] = int(obj["id"])
     return ids
+
+
+def seed_ip_ranges(
+    nb: NetBoxClient,
+    data: dict[str, Any],
+    vrf_ids: dict[str, int],
+) -> None:
+    for ip_range in data.get("ip_ranges", []):
+        start = ip_range["start"]
+        end = ip_range["end"]
+        if "/" not in start:
+            start = f"{start}/32"
+        if "/" not in end:
+            end = f"{end}/32"
+        payload: dict[str, Any] = {
+            "start_address": start,
+            "end_address": end,
+            "status": ip_range.get("status", "active"),
+            "description": ip_range.get("description", ""),
+        }
+        vrf_slug = ip_range.get("vrf")
+        if vrf_slug and vrf_slug in vrf_ids:
+            payload["vrf"] = vrf_ids[vrf_slug]
+        nb.ensure(
+            "/api/ipam/ip-ranges/",
+            {"start_address": start, "end_address": end},
+            payload,
+            label=f"ip-range:{start}-{end}",
+        )
+
+
+def seed_vcf_ips(
+    nb: NetBoxClient,
+    data: dict[str, Any],
+    vrf_ids: dict[str, int],
+) -> None:
+    vrf_id = vrf_ids.get("vcf-nested")
+    for entry in data.get("vcf_management_ips", []):
+        address = entry["address"]
+        payload: dict[str, Any] = {
+            "address": address,
+            "status": "active",
+            "description": entry.get("description", ""),
+        }
+        if vrf_id is not None:
+            payload["vrf"] = vrf_id
+        if entry.get("dns_name"):
+            payload["dns_name"] = entry["dns_name"]
+        nb.ensure(
+            "/api/ipam/ip-addresses/",
+            {"address": address},
+            payload,
+            label=f"VCF IP {address}",
+        )
 
 
 DCIM_INTERFACE = "dcim.interface"
@@ -816,6 +1162,19 @@ def main() -> None:
     seed_tags(nb, data)
     print("Manufacturers…")
     mfr_ids = seed_manufacturers(nb, data)
+    print("Rack types…")
+    seed_rack_types(nb, data, mfr_ids)
+    print("Module types…")
+    seed_module_types(nb, data, mfr_ids)
+    print("Circuit types…")
+    seed_slug_named_types(nb, data, "circuit_types", "/api/circuits/circuit-types/")
+    print("Virtual circuit types…")
+    seed_slug_named_types(
+        nb,
+        data,
+        "virtual_circuit_types",
+        "/api/circuits/virtual-circuit-types/",
+    )
     print("Device roles…")
     role_ids = seed_device_roles(nb, data)
     community_type_ids: dict[str, int] = {}
@@ -826,10 +1185,22 @@ def main() -> None:
     dt_ids = seed_device_types(nb, data, mfr_ids, community_type_ids)
     print("Platforms…")
     platform_ids = seed_platforms(nb, data)
+    print("RIR…")
+    rir_id = seed_rir(nb, data)
+    print("Aggregates…")
+    seed_aggregates(nb, data, rir_id)
+    print("VLAN groups…")
+    vlan_group_ids = seed_vlan_groups(nb, data)
+    print("VRFs…")
+    vrf_ids = seed_vrfs(nb, data)
+    print("ASNs…")
+    seed_asns(nb, data, rir_id, site_id)
     print("VLANs…")
-    vlan_ids = seed_vlans(nb, data, site_id)
+    vlan_ids = seed_vlans(nb, data, site_id, vlan_group_ids)
     print("Prefixes…")
-    seed_prefixes(nb, data, site_id, vlan_ids)
+    seed_prefixes(nb, data, site_id, vlan_ids, vrf_ids)
+    print("IP ranges…")
+    seed_ip_ranges(nb, data, vrf_ids)
     print("Clusters…")
     cluster_ids = seed_clusters(nb, data, site_id)
     print("Devices…")
@@ -838,6 +1209,8 @@ def main() -> None:
     seed_vms(nb, data, cluster_ids, role_ids, platform_ids)
     print("Service IPs…")
     seed_service_ips(nb, data)
+    print("VCF management IPs…")
+    seed_vcf_ips(nb, data, vrf_ids)
     print("DNS records…")
     seed_dns(nb, data)
     print("Done.")
