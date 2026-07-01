@@ -78,6 +78,8 @@ EOF
 
 discover_esxi() {
   echo "=== ESXi $(run_ssh_password root 172.16.30.11 hostname) @ 172.16.30.11 ==="
+  # Remote script runs on ESXi; single quotes prevent local expansion.
+  # shellcheck disable=SC2016
   run_ssh_password root 172.16.30.11 '
     echo "--- version ---"
     esxcli system version get
