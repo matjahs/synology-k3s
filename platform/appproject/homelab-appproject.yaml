@@ -30,7 +30,7 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: cnpg-system
     - server: https://kubernetes.default.svc
-      namespace: external-dns
+      namespace: dns
     - server: https://kubernetes.default.svc
       namespace: external-secrets
     - server: https://kubernetes.default.svc

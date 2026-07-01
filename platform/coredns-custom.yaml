@@ -1,6 +1,6 @@
 # Forward lab.mxe11.nl to UniFi local DNS so in-cluster pods (CI runners,
 # apps pulling from Nexus, etc.) resolve the same hostnames as LAN clients.
-# external-dns publishes records to UniFi at 172.16.0.1; CoreDNS only knows
+# UniFi forwards lab.mxe11.nl queries; OctoDNS publishes records to UniFi at 172.16.0.1.
 # cluster.local and the static NodeHosts entries in the stock k3s Corefile.
 apiVersion: v1
 kind: ConfigMap

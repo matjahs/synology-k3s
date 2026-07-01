@@ -157,8 +157,8 @@ kubectl get certificate -n kube-system backstage-tls
 curl -I https://backstage.lab.mxe11.nl/healthcheck
 ```
 
-DNS for `backstage.lab.mxe11.nl` is managed automatically by external-dns from
-the HTTPRoute.
+DNS for `backstage.lab.mxe11.nl` is managed by **dns-netbox-sync** → NetBox DNS →
+OctoDNS → UniFi. See `platform/dns.md`.
 
 ## Notes
 

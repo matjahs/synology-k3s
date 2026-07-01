@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dns
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: octodns-config
+  namespace: dns
+data:
+  production.yaml: |
+    providers:
+      netbox:
+        class: octodns_netbox_dns.NetBoxDNSProvider
+        url: https://netbox.lab.mxe11.nl
+        token: env/NETBOX_TOKEN
+        view: false
+        disable_ptr: true
+        insecure_request: false
+      unifi:
+        class: octodns_unifi.UnifiProvider
+        host: https://172.16.0.1
+        api_key: env/UNIFI_API_KEY
+        site: default
+        verify_ssl: false
+
+    zones:
+      lab.mxe11.nl.:
+        sources:
+          - netbox
+        targets:
+          - unifi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: octodns-sync
+  namespace: dns
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: octodns
+              image: nexus.lab.mxe11.nl/platform/octodns-sync:0.1.0
+              imagePullPolicy: IfNotPresent
+              args:
+                - --config-file=/config/production.yaml
+              env:
+                - name: NETBOX_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: netbox-api
+                      key: token
+                - name: UNIFI_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: unifi-dns
+                      key: api-key
+              volumeMounts:
+                - name: config
+                  mountPath: /config
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 256Mi
+          volumes:
+            - name: config
+              configMap:
+                name: octodns-config
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: netbox-api
+  namespace: dns
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: netbox-api
+    creationPolicy: Owner
+  data:
+    - secretKey: token
+      remoteRef:
+        key: netbox/api
+        property: token
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: unifi-dns
+  namespace: dns
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault
+    kind: ClusterSecretStore
+  target:
+    name: unifi-dns
+    creationPolicy: Owner
+  data:
+    - secretKey: api-key
+      remoteRef:
+        key: dns/unifi
+        property: api_key

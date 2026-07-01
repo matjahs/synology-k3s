@@ -1,0 +1,21 @@
+providers:
+  netbox:
+    class: octodns_netbox_dns.NetBoxDNSProvider
+    url: https://netbox.lab.mxe11.nl
+    token: env/NETBOX_TOKEN
+    view: false
+    disable_ptr: true
+    insecure_request: false
+  unifi:
+    class: octodns_unifi.UnifiProvider
+    host: https://172.16.0.1
+    api_key: env/UNIFI_API_KEY
+    site: default
+    verify_ssl: false
+
+zones:
+  lab.mxe11.nl.:
+    sources:
+      - netbox
+    targets:
+      - unifi

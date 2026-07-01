@@ -25,7 +25,7 @@ jobs:
       - name: ShellCheck
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck bootstrap-k8s-vm.sh
+          shellcheck bootstrap-k8s-vm.sh scripts/*.sh
 
   kustomize-kubeconform:
     runs-on: ubuntu-latest
@@ -45,7 +45,7 @@ jobs:
             | sudo tar -xz -C /usr/local/bin kubeconform
       - name: Validate Kustomize builds
         run: |
-          for d in platform apps/argocd/image-updater apps/ci apps/keycloak apps/guacamole apps/nexus apps/observability apps/backstage; do
+          for d in platform platform/dns apps/argocd/image-updater apps/ci apps/keycloak apps/guacamole apps/nexus apps/observability apps/backstage apps/netbox; do
             echo "::group::kustomize build $d"
             # -skip Cluster: datreeio CNPG schema predates spec.managed.databases (added 1.23)
             # -skip ImageUpdater: datreeio schema omits gitConfig.pullRequest (added in argocd-image-updater v1.1.x)
