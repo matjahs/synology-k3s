@@ -29,6 +29,44 @@ export NETBOX_TOKEN=$(vault kv get -field=token secret/netbox/api)
 ../../scripts/bootstrap-netbox-dns-zone.sh lab.mxe11.nl
 ```
 
+Optional SOA defaults (override if needed): `DNS_SOA_MNAME` (default `ns1.<zone>`),
+`DNS_SOA_RNAME` (default `hostmaster.<zone>`). The script creates the nameserver
+object if missing — required by `netbox-plugin-dns` for zone creation.
+
+## Homelab inventory seed
+
+One-time DCIM/IPAM/virtualization seed from git (edit data, then apply):
+
+```bash
+# 1. Fill scripts/netbox-homelab-data.yaml (Synology model, host IPs, VM sizes, …)
+./scripts/seed-netbox-homelab.sh --check
+
+export NETBOX_TOKEN=$(vault kv get -field=token secret/netbox/api)
+./scripts/seed-netbox-homelab.sh --import-community-device-types
+```
+
+Creates site, prefixes, physical devices, k3s/ESXi VMs, static DNS A records,
+and the external-gateway VIP. With `--import-community-device-types`, exact
+matches from `netbox-community/devicetype-library` are imported first (currently
+UCG-Fiber and MikroTik CRS310); local fallbacks remain for models missing from
+the library (Synology DS723+ and Dell PowerEdge T550). HTTPRoute hostnames stay
+owned by `dns-netbox-sync` (`managed-by=k8s`).
+
+Discovery from live systems:
+
+```bash
+export VCF_SSH_PASS='…'   # ESXi + MikroTik (vcf91-helper skill)
+./scripts/discover-homelab.sh esxi
+./scripts/discover-homelab.sh mikrotik
+
+# UniFi Cloud Gateway Fiber — non-interactive password SSH:
+export UCG_SSH_PASS='…'
+./scripts/discover-homelab.sh ucg
+# Do not run without UCG_SSH_PASS unless key auth is enabled on the UCG.
+```
+
+Merge discovery output into `scripts/netbox-homelab-data.yaml`, then seed.
+
 ## Vault (required before first sync)
 
 ```bash

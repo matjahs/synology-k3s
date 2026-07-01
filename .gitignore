@@ -25,6 +25,7 @@ cert-manager-cloudflare-secret.yaml
 *.swp
 *.swo
 *~
+mtu
 
 # Logs
 *.log
@@ -41,6 +42,12 @@ cert-manager-cloudflare-secret.yaml
 # Kubernetes local render/output artifacts
 *.retry
 .cursor/
+
+# Python/local script artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+scripts/.netbox-seed-venv/
 
 # Added by ggshield
 .cache_ggshield

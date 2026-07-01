@@ -1,0 +1,508 @@
+# Homelab inventory for scripts/seed-netbox-homelab.py
+#
+# Partially auto-derived from scripts/discover-homelab.sh (ESXi @ 172.16.30.11).
+# Re-run discovery after infra changes:
+#   export VCF_SSH_PASS='…'
+#   ./scripts/discover-homelab.sh esxi
+#
+# Usage:
+#   export NETBOX_TOKEN=$(vault kv get -field=token secret/netbox/api)
+#   ./scripts/seed-netbox-homelab.sh
+
+site:
+  name: Homelab
+  slug: lab
+  status: active
+  description: MxE-Labs lab environment
+  physical_address: |
+    Waalbandijk 469
+    6541AA Nijmegen
+    The Netherlands
+
+tags:
+  - lab
+  - gitops
+
+# VLAN IDs: UCG (ssh root@172.16.0.1), MikroTik bridge1 (ssh admin@172.16.0.2), ESXi portgroups.
+vlans:
+  - vid: 1
+    slug: vlan1-lan
+    name: lan
+    description: Untagged on MikroTik bridge1; UCG br0 172.16.0.1/24 (switch0.1)
+    status: active
+  - vid: 10
+    slug: vlan10
+    name: vlan10
+    description: UCG br10 172.16.10.1/24 (switch0.10) — not trunked on MikroTik bridge1
+    status: active
+  - vid: 20
+    slug: vlan20
+    name: vlan20
+    description: UCG br20 172.16.13.1/24 (switch0.20) — subnet .13.x, not on MikroTik
+    status: active
+  - vid: 30
+    slug: vlan30-servers
+    name: servers
+    description: UCG br30 172.16.30.1/24 (switch0.30); tagged on MikroTik bridge1
+    status: active
+  - vid: 50
+    slug: vlan50-storage
+    name: storage
+    description: UCG switch0.50 + MikroTik STORAGE trunk (SFP+, ether7); 172.16.50.0/24
+    status: active
+  - vid: 100
+    slug: vlan100-vcf
+    name: vcf
+    description: UCG switch0.100 trunk; MikroTik vlan100-ingress 192.168.100.1/24
+    status: active
+  - vid: 200
+    slug: vlan200
+    name: vlan200
+    description: MikroTik bridge1 only (ether8, SFP+) — not defined on UCG switch0
+    status: active
+  - vid: 300
+    slug: vlan300-wan
+    name: wan
+    description: UCG WAN — eth4.300 95.99.12.24/22 (ISP)
+    status: active
+
+prefixes:
+  - prefix: 172.16.0.0/24
+    vlan: vlan1-lan
+    status: active
+    description: Main LAN — UCG br0, MikroTik core, Pi
+  - prefix: 172.16.10.0/24
+    vlan: vlan10
+    status: active
+    description: VLAN 10 — UCG gateway 172.16.10.1
+  - prefix: 172.16.13.0/24
+    vlan: vlan20
+    status: active
+    description: VLAN 20 — UCG gateway 172.16.13.1 (br20)
+  - prefix: 172.16.30.0/24
+    vlan: vlan30-servers
+    status: active
+    description: Servers / VMs — UCG gateway 172.16.30.1 (br30)
+  - prefix: 172.16.30.240/29
+    vlan: vlan30-servers
+    status: active
+    description: Cilium L2 load-balancer VIP pool (external-gateway)
+  - prefix: 172.16.31.0/24
+    vlan: vlan30-servers
+    status: active
+    description: WireGuard — UCG wgsrv1 172.16.31.1
+  - prefix: 172.16.50.0/24
+    vlan: vlan50-storage
+    status: active
+    description: Storage VLAN — Synology .100, ESXi vmk2 .99
+  - prefix: 192.168.100.0/24
+    vlan: vlan100-vcf
+    status: active
+    description: VCF ingress — MikroTik vlan100-ingress gateway 192.168.100.1
+  - prefix: 10.1.0.0/20
+    vlan: vlan100-vcf
+    status: active
+    description: VCF site-a nested mgmt — UCG static route via holorouter 172.16.30.12
+  - prefix: 95.99.12.0/22
+    vlan: vlan300-wan
+    status: active
+    description: UCG WAN public block — eth4.300 (dynamic 95.99.12.24)
+
+# UCG switch0 VLANs: 1, 10, 20, 30, 50, 100. MikroTik-only VLAN 200. Disabled on MikroTik: 40, 60, 70, 80-81, 99, 199
+
+manufacturers:
+  - Synology
+  - Ubiquiti
+  - MikroTik
+  - VMware
+  - Dell
+  - Raspberry Pi Foundation
+  - Generic
+
+device_roles:
+  - name: Network Gateway
+    slug: gateway
+    color: 2196f3
+  - name: Network Switch
+    slug: switch
+    color: 607d8b
+  - name: Storage
+    slug: storage
+    color: 4caf50
+  - name: Hypervisor
+    slug: hypervisor
+    color: ff9800
+  - name: Kubernetes Node
+    slug: k8s-node
+    color: 9c27b0
+  - name: Server
+    slug: server
+    color: 795548
+  - name: DNS
+    slug: dns
+    color: 00bcd4
+
+community_device_types:
+  # Exact models available in netbox-community/devicetype-library.
+  # The seed script imports these first when --import-community-device-types is used
+  # and maps local aliases (device_type below) to the community slugs.
+  - alias: unifi-cloud-gateway-fiber
+    url: https://raw.githubusercontent.com/netbox-community/devicetype-library/master/device-types/Ubiquiti/UCG-Fiber.yaml
+    slug: ubiquiti-unifi-cloud-gateway-fiber
+  - alias: mikrotik-crs310
+    url: https://raw.githubusercontent.com/netbox-community/devicetype-library/master/device-types/MikroTik/CRS310-8G-Plus-2S-Plus-IN.yaml
+    slug: mikrotik-crs310-8g-plus-2s-plus-in
+
+device_types:
+  # Local fallbacks or models missing from the community library.
+  # DS723+ and PowerEdge T550 were not present in the library at the time this
+  # file was created, so they stay as local definitions.
+  - manufacturer: Synology
+    model: DS723+
+    slug: synology-ds723plus
+    u_height: 0
+    is_full_depth: false
+  - manufacturer: Ubiquiti
+    model: UniFi Cloud Gateway Fiber
+    slug: unifi-cloud-gateway-fiber
+    library_slug: ubiquiti-unifi-cloud-gateway-fiber
+    u_height: 0
+  - manufacturer: MikroTik
+    model: CRS310-8G-2S+IN
+    slug: mikrotik-crs310
+    library_slug: mikrotik-crs310-8g-plus-2s-plus-in
+    u_height: 1
+  - manufacturer: Dell
+    model: PowerEdge T550
+    slug: dell-t550
+    u_height: 2
+  - manufacturer: VMware
+    model: ESXi 9.1
+    slug: vmware-esxi-91
+    u_height: 0
+  - manufacturer: Raspberry Pi Foundation
+    model: Raspberry Pi 5
+    slug: rpi-5
+    u_height: 0
+  - manufacturer: Generic
+    model: Virtual Machine
+    slug: generic-vm
+    u_height: 0
+
+platforms:
+  - name: Ubuntu 24.04
+    slug: ubuntu-24-04
+  - name: RHEL 10
+    slug: rhel-10
+  - name: Debian 12
+    slug: debian-12
+  - name: Windows Server 2025
+    slug: windows-server-2025
+  - name: VMware Photon OS 5
+    slug: photon-os
+
+cluster_types:
+  - name: k3s
+    slug: k3s
+  - name: VMware ESXi
+    slug: vmware-esxi
+
+clusters:
+  - name: homelab-k3s
+    slug: homelab-k3s
+    type: k3s
+    status: active
+    description: GitOps k3s — control plane on Synology VMM, worker on ESXi
+  - name: esx-lab
+    slug: esx-lab
+    type: vmware-esxi
+    status: active
+    description: General lab VMs on physical ESX (esx.lab.mxe11.nl)
+  - name: vcf-nested
+    slug: vcf-nested
+    type: vmware-esxi
+    status: active
+    description: Nested VCF 9.1 stack (vcf-esx-01a..03a, installer)
+
+virtual_machines:
+  # --- k3s (homelab-k3s) ---
+  - name: k3s.lab.mxe11.nl
+    cluster: homelab-k3s
+    role: k8s-node
+    platform: ubuntu-24-04
+    status: active
+    primary_ip4: 172.16.30.8/24
+    description: k3s control plane — Synology VMM guest; Cilium ingress, Argo CD
+    hosted_on: synology
+    k8s_role: control-plane
+
+  - name: k3s-node-2.lab.mxe11.nl
+    cluster: homelab-k3s
+    role: k8s-node
+    platform: rhel-10
+    status: active
+    primary_ip4: 172.16.30.16/24
+    vcpus: 4
+    memory_mb: 16384
+    description: k3s worker — ESXi vm 143 "k3s-node-2" (RHEL 10)
+    hosted_on: esx
+    esxi_vmid: 143
+    k8s_role: worker
+
+  # --- ESXi lab VMs with guest IP (discovered 2026-07-01) ---
+  - name: corp-ca01.lab.mxe11.nl
+    cluster: esx-lab
+    role: server
+    platform: windows-server-2025
+    status: active
+    primary_ip4: 172.16.30.3/24
+    vcpus: 2
+    memory_mb: 16384
+    description: ESXi vm 99 "dc01" — guest CORP-DC01.corp.mxe11.nl — AD DS + AD CS
+    hosted_on: esx
+    esxi_vmid: 99
+    esxi_name: dc01
+
+  - name: infoblox.lab.mxe11.nl
+    cluster: esx-lab
+    role: dns
+    status: active
+    primary_ip4: 172.16.30.110/24
+    vcpus: 2
+    memory_mb: 16384
+    description: ESXi vm 64 — Infoblox NIOS (guest tools report Ubuntu)
+    hosted_on: esx
+    esxi_vmid: 64
+    esxi_name: infoblox
+
+  - name: holorouter.lab.mxe11.nl
+    cluster: esx-lab
+    role: server
+    platform: photon-os
+    status: active
+    primary_ip4: 172.16.30.12/24
+    vcpus: 4
+    memory_mb: 16384
+    description: ESXi vm 69 — VCF edge router; UCG routes 10.1.0.0/20 here (172.16.30.12)
+    hosted_on: esx
+    esxi_vmid: 69
+    esxi_name: holorouter-9.0.2.0424
+
+  # --- ESXi inventory without guest IP (offline / no VMware Tools) ---
+  - name: vcf-esx-01a
+    cluster: vcf-nested
+    role: hypervisor
+    status: offline
+    description: Nested ESXi for VCF site-a — datastore ds-nvme-a
+    esxi_vmid: 137
+  - name: vcf-esx-02a
+    cluster: vcf-nested
+    role: hypervisor
+    status: offline
+    description: Nested ESXi for VCF site-a
+    esxi_vmid: 138
+  - name: vcf-esx-03a
+    cluster: vcf-nested
+    role: hypervisor
+    status: offline
+    description: Nested ESXi for VCF site-a
+    esxi_vmid: 139
+  - name: vcf-vcfinstaller-a
+    cluster: vcf-nested
+    role: server
+    platform: photon-os
+    status: offline
+    description: VCF installer VM (Photon)
+    esxi_vmid: 140
+  - name: salt
+    cluster: esx-lab
+    role: server
+    platform: rhel-10
+    status: offline
+    description: RHEL 10 VM — datastore ds-nvme-a
+    esxi_vmid: 141
+  - name: router91
+    cluster: esx-lab
+    role: server
+    platform: photon-os
+    status: offline
+    description: Photon OS router VM
+    esxi_vmid: 142
+  - name: authentik
+    cluster: esx-lab
+    role: server
+    platform: ubuntu-24-04
+    status: offline
+    description: Ubuntu VM — datastore ds-local-1
+    esxi_vmid: 5
+  - name: vcsa-l0
+    cluster: esx-lab
+    role: server
+    status: offline
+    description: vCenter Server Appliance — datastore ds-local-2
+    esxi_vmid: 62
+  - name: netbird-control
+    cluster: esx-lab
+    role: server
+    platform: ubuntu-24-04
+    status: offline
+    description: NetBird control plane VM
+    esxi_vmid: 87
+  - name: lab-ca03
+    cluster: esx-lab
+    role: server
+    platform: windows-server-2025
+    status: offline
+    description: Windows Server 2022 CA — datastore synology
+    esxi_vmid: 88
+  - name: lab-dc01
+    cluster: esx-lab
+    role: server
+    platform: windows-server-2025
+    status: offline
+    description: Windows Server 2022 DC — datastore synology
+    esxi_vmid: 89
+
+devices:
+  - name: unifi-gateway
+    device_type: unifi-cloud-gateway-fiber
+    role: gateway
+    status: active
+    description: UCG-Fiber — DNS forwarder lab.mxe11.nl; WAN eth4.300; routes 10.1.0.0/20 → holorouter
+    primary_ip4: 172.16.0.1/24
+    extra_ips:
+      - address: 172.16.10.1/24
+        interface: br10
+        description: UCG br10 — VLAN 10 (switch0.10)
+      - address: 172.16.10.9/32
+        interface: honeypot10
+        description: Honeypot service on VLAN 10
+      - address: 172.16.13.1/24
+        interface: br20
+        description: UCG br20 — VLAN 20 (switch0.20, subnet .13.x)
+      - address: 172.16.30.1/24
+        interface: br30
+        description: UCG br30 — VLAN 30 default gateway for servers/VMs
+      - address: 172.16.31.1/24
+        interface: wgsrv1
+        description: WireGuard server
+    interface: br0
+
+  - name: mikrotik-core
+    device_type: mikrotik-crs310
+    role: switch
+    status: active
+    description: MikroTik CRS310 on bridge1 — VLANs 1/30/50/100/200; mgmt 172.16.0.2, VCF SVI 192.168.100.1
+    primary_ip4: 172.16.0.2/24
+    dns_name: core.lab.mxe11.nl
+    interface: bridge1
+    extra_ips:
+      - address: 192.168.100.1/24
+        interface: vlan100-ingress
+        description: VLAN 100 VCF ingress SVI
+
+  - name: synology
+    device_type: synology-ds723plus
+    role: storage
+    status: active
+    description: Synology DS723+ — DSM, VMM (k3s CP), iSCSI (democratic-csi), Garage S3
+    primary_ip4: 172.16.30.21/24
+    dns_name: synology.mxe11.nl
+    extra_ips:
+      - address: 172.16.50.100/24
+        interface: storage
+        description: VLAN 50 STORAGE interface
+
+  - name: esx
+    device_type: dell-t550
+    role: hypervisor
+    status: active
+    description: Dell PowerEdge T550 — VMware ESXi 9.1.0 (nested VCF + lab VMs)
+    primary_ip4: 172.16.30.11/24
+    dns_name: esx.lab.mxe11.nl
+    serial: BBSF9X3
+    extra_ips:
+      - address: 172.16.50.99/24
+        interface: vmk2
+        description: ESXi vmk2 — VLAN 50 NFS/storage
+
+  - name: vault-pi
+    device_type: rpi-5
+    role: server
+    status: active
+    description: Raspberry Pi 5 — HashiCorp Vault + k3s observability worker
+    primary_ip4: 172.16.0.4/24
+    dns_name: vault.mxe11.nl
+
+service_ips:
+  - address: 172.16.30.240/32
+    dns_name: external-gateway.lab.mxe11.nl
+    description: Cilium L2 VIP — external-gateway (HTTPS ingress for lab apps)
+
+dns_zone: lab.mxe11.nl
+dns_records:
+  - name: vault
+    type: A
+    value: 172.16.0.4
+    ttl: 300
+    description: HashiCorp Vault / Pi k3s agent
+  - name: core
+    type: A
+    value: 172.16.0.2
+    ttl: 300
+    description: MikroTik CRS310 core switch
+  - name: esx
+    type: A
+    value: 172.16.30.11
+    ttl: 300
+    description: ESXi hypervisor (Dell T550)
+  - name: garage
+    type: A
+    value: 172.16.30.21
+    ttl: 300
+    description: Garage S3 on Synology (CNPG backups)
+  - name: corp-ca01
+    type: A
+    value: 172.16.30.3
+    ttl: 300
+    description: AD DS DC + AD CS (ESXi vm dc01 / CORP-DC01.corp.mxe11.nl)
+  - name: infoblox
+    type: A
+    value: 172.16.30.110
+    ttl: 300
+    description: Infoblox NIOS
+  - name: holorouter
+    type: A
+    value: 172.16.30.12
+    ttl: 300
+    description: HoloRouter VM
+  - name: k3s
+    type: A
+    value: 172.16.30.8
+    ttl: 300
+    description: k3s API / control-plane node
+  - name: ns1
+    type: A
+    value: 172.16.0.1
+    ttl: 300
+    description: SOA MNAME for lab.mxe11.nl (UniFi serves zone)
+
+k8s_services:
+  - hostname: argocd.lab.mxe11.nl
+    namespace: argocd
+  - hostname: backstage.lab.mxe11.nl
+    namespace: backstage
+  - hostname: keycloak.lab.mxe11.nl
+    namespace: keycloak
+  - hostname: netbox.lab.mxe11.nl
+    namespace: netbox
+  - hostname: nexus.lab.mxe11.nl
+    namespace: tools
+  - hostname: guacamole.lab.mxe11.nl
+    namespace: tools
+  - hostname: home.lab.mxe11.nl
+    namespace: tools
+  - hostname: cyberchef.lab.mxe11.nl
+    namespace: tools
+  - hostname: status.lab.mxe11.nl
+    namespace: monitoring
