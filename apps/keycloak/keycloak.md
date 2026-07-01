@@ -33,7 +33,7 @@ Populate Vault `secret/cnpg/backup-s3` (see
 
 ```bash
 vault kv put secret/cnpg/backup-s3 \
-  endpoint_url=https://garage.lab.mxe11.nl:3900 \
+  endpoint_url=http://garage.lab.mxe11.nl:3900 \
   access_key_id=<key> \
   secret_access_key=<secret> \
   bucket=cnpg-backups \

@@ -103,7 +103,7 @@ vault kv put secret/argocd/git \
   private_key=@/path/to/private-key.pem
 
 vault kv put secret/cnpg/backup-s3 \
-  endpoint_url=https://garage.lab.mxe11.nl:3900 \
+  endpoint_url=http://garage.lab.mxe11.nl:3900 \
   access_key_id=<garage-key> \
   secret_access_key=<garage-secret> \
   bucket=cnpg-backups \
@@ -119,7 +119,7 @@ vault kv put secret/democratic-csi/driver \
   target_portal=172.16.30.X
 
 vault kv put secret/cnpg/backup-s3 \
-  endpoint_url=https://garage.lab.mxe11.nl:3900 \
+  endpoint_url=http://garage.lab.mxe11.nl:3900 \
   access_key_id=<garage-key> \
   secret_access_key=<garage-secret> \
   bucket=cnpg-backups \

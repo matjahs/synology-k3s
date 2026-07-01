@@ -43,7 +43,7 @@ Populate the three Tier 1 Vault paths below, then re-run with --check:
 3. secret/cnpg/backup-s3 — Garage S3 credentials for CNPG backups
 
    vault kv put secret/cnpg/backup-s3 \
-     endpoint_url=https://garage.lab.mxe11.nl:3900 \
+     endpoint_url=http://garage.lab.mxe11.nl:3900 \
      access_key_id=<garage-key> \
      secret_access_key=<garage-secret> \
      bucket=cnpg-backups \

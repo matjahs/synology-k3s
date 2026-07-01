@@ -12,7 +12,7 @@ spec:
     barmanObjectStore:
       # endpoint_url and bucket must match Vault secret/cnpg/backup-s3.
       destinationPath: s3://cnpg-backups/keycloak-db/
-      endpointURL: https://garage.lab.mxe11.nl:3900
+      endpointURL: http://garage.lab.mxe11.nl:3900
       s3Credentials:
         accessKeyId:
           name: cnpg-backup-s3
